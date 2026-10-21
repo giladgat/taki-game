@@ -35,6 +35,7 @@
   .card.ok:hover { transform:rotate(-4deg) translateY(-14px); }
   .card.top { width:clamp(64px,20vw,80px); aspect-ratio:80/116; font-size:clamp(32px,11vw,46px); }
   .pile { cursor:pointer; }
+  select { font:inherit; padding:8px 12px; border:0; border-radius:8px; background:#2a3f6b; color:#fff; }
   button { font:inherit; padding:8px 16px; border:0; border-radius:8px; background:#2a3f6b; color:#fff; cursor:pointer; }
   button:hover { background:#38538a; }
   .pick button { width:56px; height:56px; border-radius:50%; border:3px solid #fff; }
@@ -127,7 +128,7 @@ function play(w, i) {
   if (!hands[w].length) { over = true; msg = w === 'h' ? '🎉 ניצחת!' : '🤖 המחשב ניצח'; confetti(); w === 'h' ? SFX.win() : SFX.lose(); return next(); }
   if (c.c === 'w') {
     if (w === 'h') { pick = true; msg = 'בחר צבע'; return next(); }
-    return setColor(mostCommon());
+    return setColor(level === '1' ? 'rygb'[Math.random() * 4 | 0] : mostCommon());
   }
   if (taki) { msg = w === 'h' ? 'טאקי פתוח: שחק קלפים באותו צבע או סגור' : 'המחשב משחק טאקי…'; return next(); }
   endMove(w);
@@ -154,17 +155,33 @@ function mostCommon() {
   return Object.keys(n).sort((a, b) => n[b] - n[a])[0];
 }
 
+// Difficulty: 1 = easy, 2 = medium, 3 = hard.
+let level = '2';
+try { level = localStorage.getItem('level') || '2'; } catch (e) {}
+function setLevel(v) { level = v; try { localStorage.setItem('level', v); } catch (e) {} }
+
 function cpuTurn() {
   if (over || turn !== 'c') return;
   const h = hands.c;
   if (taki) {
     const i = h.findIndex(c => c.c === color);
-    return i < 0 ? closeTaki() : play('c', i);
+    return i < 0 || (level === '1' && Math.random() < .5) ? closeTaki() : play('c', i);
   }
   const rank = { p2: 5, taki: 4, stop: 3, dir: 3, plus: 3, col: 0 };
   const ok = h.map((c, i) => i).filter(i => canPlay(h[i]));
-  if (!ok.length) { SFX.draw(); draw('c'); turn = 'h'; msg = 'המחשב לקח קלף · התור שלך'; return next(); }
-  const score = i => (rank[h[i].v] ?? 1) + Math.random();
+  if (!ok.length || (level === '1' && Math.random() < .2)) { SFX.draw(); draw('c'); turn = 'h'; msg = 'המחשב לקח קלף · התור שלך'; return next(); }
+  const humanClose = hands.h.length <= 2;
+  const score = i => {
+    const c = h[i];
+    if (level === '1') return Math.random();
+    let r = rank[c.v] ?? 1;
+    if (level === '3') {
+      if (humanClose && ['stop', 'plus', 'dir', 'p2'].includes(c.v)) r += 6;   // keep control when you're close to winning
+      if (c.c === 'w' && h.length > 2) r -= 3;                                 // save wild cards
+      else r += h.filter(x => x.c === c.c).length * .3;                        // favor the color it holds most of
+    }
+    return r + Math.random() * (level === '3' ? .1 : 1);
+  };
   play('c', ok.sort((a, b) => score(b) - score(a))[0]);
 }
 
@@ -201,6 +218,8 @@ function render() {
     <div class="row">${hands.h.map((c, i) =>
         face(c, mine && canPlay(c) ? 'ok' : '', `data-h="${i}" onclick="humanClick(${i})"`)).join('')}</div>
     <div class="row"><button onclick="newGame()">משחק חדש</button>
+      <select onchange="setLevel(this.value)" aria-label="רמת קושי">${[['1', 'קל'], ['2', 'בינוני'], ['3', 'קשה']].map(([v, t]) =>
+        `<option value="${v}" ${v === level ? 'selected' : ''}>${t}</option>`).join('')}</select>
       <button onclick="toggleMute()" aria-label="צלילים">${muted ? '🔇' : '🔊'}</button></div>`;
   if (flyFrom) flyCard(flyFrom);
   flyFrom = null;
