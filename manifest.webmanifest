@@ -1,0 +1,12 @@
+{
+  "name": "טאקי",
+  "short_name": "טאקי",
+  "start_url": "./",
+  "display": "standalone",
+  "background_color": "#07281b",
+  "theme_color": "#07281b",
+  "icons": [
+    { "src": "icon-180-v2.png", "sizes": "180x180", "type": "image/png" },
+    { "src": "icon-512-v2.png", "sizes": "512x512", "type": "image/png" }
+  ]
+}
