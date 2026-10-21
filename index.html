@@ -1,0 +1,213 @@
+<!doctype html>
+<html lang="he" dir="rtl">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-title" content="טאקי">
+<meta name="theme-color" content="#07281b">
+<title>טאקי</title>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Permanent+Marker&display=swap">
+<style>
+  * { box-sizing: border-box; }
+  body { margin:0; min-height:100vh; color:#f1f5f9;
+         background:
+           url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='160' height='160'%3E%3Cg fill='%23ffffff' fill-opacity='.07' font-size='34' font-family='Arial'%3E%3Ctext x='18' y='50'%3E%E2%99%A0%3C/text%3E%3Ctext x='98' y='50'%3E%E2%99%A5%3C/text%3E%3Ctext x='58' y='130'%3E%E2%99%A6%3C/text%3E%3Ctext x='128' y='130'%3E%E2%99%A3%3C/text%3E%3C/g%3E%3C/svg%3E"),
+           radial-gradient(ellipse at center, #1f7a50 0%, #0f4a31 60%, #07281b 100%);
+         box-shadow:inset 0 0 0 14px #5b3a1e, inset 0 0 0 18px #3a2410, inset 0 0 90px #000a; font-family:system-ui,"Segoe UI",Arial,sans-serif;
+         display:flex; flex-direction:column; align-items:center; gap:14px; direction:rtl; touch-action:manipulation;
+         -webkit-tap-highlight-color:transparent; padding-block:16px;
+         padding-left:max(16px, env(safe-area-inset-left, 0px)); padding-right:max(16px, env(safe-area-inset-right, 0px)); }
+  :root { color-scheme:dark; }
+  #app { display:flex; flex-direction:column; align-items:center; gap:14px; max-width:100%; }
+  h1 { margin:0; font-size:28px; }
+  #msg { font-size:20px; font-weight:600; min-height:28px; }
+  .row { display:flex; gap:6px; flex-wrap:wrap; justify-content:center; max-width:900px; }
+  .mid { display:flex; gap:clamp(12px,5vw,28px); align-items:center; justify-content:center; margin:6px 0; }
+  .card { width:clamp(46px,14.5vw,62px); aspect-ratio:62/90; flex:none; border-radius:10px; border:3px solid #fff; color:#fff; font-size:clamp(24px,8vw,34px);
+          font-family:"Permanent Marker", Impact, "Marker Felt", cursive; letter-spacing:1px;
+          -webkit-text-stroke:2px #111; paint-order:stroke fill; transform:rotate(-4deg);
+          display:flex; align-items:center; justify-content:center;
+          text-shadow:3px 3px 0 #111, 5px 5px 0 #fff6; user-select:none;
+          box-shadow:0 3px 8px #0006; }
+  .card.back { transform:none; font-size:18px; background:repeating-linear-gradient(45deg,#1e293b,#1e293b 6px,#334155 6px,#334155 12px); }
+  .card.ok { cursor:pointer; transform:rotate(-4deg) translateY(-8px); border-color:#fde047; }
+  .card.ok:hover { transform:rotate(-4deg) translateY(-14px); }
+  .card.top { width:clamp(64px,20vw,80px); aspect-ratio:80/116; font-size:clamp(32px,11vw,46px); }
+  .pile { cursor:pointer; }
+  button { font:inherit; padding:8px 16px; border:0; border-radius:8px; background:#2a3f6b; color:#fff; cursor:pointer; }
+  button:hover { background:#38538a; }
+  .pick button { width:56px; height:56px; border-radius:50%; border:3px solid #fff; }
+  small { opacity:.8; }
+</style>
+</head>
+<body>
+
+  <h1>טאקי</h1>
+  <div id="app"></div>
+
+<script>
+const COL = { r:'#ef4444', y:'#eab308', g:'#22c55e', b:'#3b82f6' };
+const NAMES = { r:'אדום', y:'צהוב', g:'ירוק', b:'כחול' };
+const SYM = { stop:'⛔', plus:'+', dir:'⇄', p2:'+2', col:'🌈', taki:'טאקי' };
+const RAINBOW = 'conic-gradient(#ef4444,#eab308,#22c55e,#3b82f6,#ef4444)';
+let flyFrom, deck, hands, pileTop, color, turn, taki, over, pick, msg;
+
+const shuffle = a => { for (let i = a.length - 1; i > 0; i--) { const j = Math.random() * (i + 1) | 0; [a[i], a[j]] = [a[j], a[i]]; } return a; };
+
+function fullDeck() {
+  const d = [];
+  for (const c of 'rygb') {
+    for (let v = 1; v <= 9; v++) if (v !== 2) d.push({ c, v: '' + v }, { c, v: '' + v });
+    for (const v of ['stop', 'plus', 'dir', 'p2', 'taki']) d.push({ c, v }, { c, v });
+  }
+  for (let i = 0; i < 4; i++) d.push({ c: 'w', v: 'col' });
+  return shuffle(d);
+}
+
+function draw(w, n = 1) {
+  for (let k = 0; k < n; k++) { if (!deck.length) deck = fullDeck(); hands[w].push(deck.pop()); }
+}
+
+// While a TAKI is open only cards of the current color may be played.
+const canPlay = c => taki ? c.c === color : c.c === 'w' || c.c === color || c.v === pileTop.v;
+
+function newGame() {
+  deck = fullDeck(); hands = { h: [], c: [] };
+  draw('h', 8); draw('c', 8);
+  do { pileTop = deck.pop(); if (!/^\d$/.test(pileTop.v)) { deck.unshift(pileTop); pileTop = null; } } while (!pileTop);
+  color = pileTop.c; turn = 'h'; taki = false; over = false; pick = false; msg = 'התור שלך';
+  render();
+}
+
+function next() {
+  render();
+  if (!over && turn === 'c') setTimeout(cpuTurn, 800);
+}
+
+function play(w, i) {
+  const src = w === 'h' ? document.querySelector(`[data-h="${i}"]`)
+    : document.querySelectorAll('.card.cpu')[hands.c.length >> 1];
+  const c = hands[w].splice(i, 1)[0];
+  if (src) flyFrom = { rect: src.getBoundingClientRect(), card: c };
+  pileTop = c;
+  if (c.c !== 'w') color = c.c;
+  if (c.v === 'taki') taki = true;
+  if (!hands[w].length) { over = true; msg = w === 'h' ? '🎉 ניצחת!' : '🤖 המחשב ניצח'; confetti(); return next(); }
+  if (c.c === 'w') {
+    if (w === 'h') { pick = true; msg = 'בחר צבע'; return next(); }
+    return setColor(mostCommon());
+  }
+  if (taki) { msg = w === 'h' ? 'טאקי פתוח: שחק קלפים באותו צבע או סגור' : 'המחשב משחק טאקי…'; return next(); }
+  endMove(w);
+}
+
+function setColor(c) { color = c; pick = false; endMove(turn); }
+
+// Stop / direction change / plus / +2 give the same player another turn (2 players).
+function endMove(w) {
+  const o = w === 'h' ? 'c' : 'h', v = pileTop.v;
+  let note = '';
+  if (v === 'p2') { draw(o, 2); note = (o === 'c' ? 'המחשב' : 'אתה') + ' לוקח 2 קלפים · '; }
+  else if (!['stop', 'dir', 'plus'].includes(v)) turn = o;
+  else note = 'שחק שוב · ';
+  msg = note + (turn === 'h' ? 'התור שלך' : 'התור של המחשב');
+  next();
+}
+
+function closeTaki() { taki = false; endMove(turn); }
+
+function mostCommon() {
+  const n = { r: 0, y: 0, g: 0, b: 0 };
+  hands.c.forEach(c => { if (c.c !== 'w') n[c.c]++; });
+  return Object.keys(n).sort((a, b) => n[b] - n[a])[0];
+}
+
+function cpuTurn() {
+  if (over || turn !== 'c') return;
+  const h = hands.c;
+  if (taki) {
+    const i = h.findIndex(c => c.c === color);
+    return i < 0 ? closeTaki() : play('c', i);
+  }
+  const rank = { p2: 5, taki: 4, stop: 3, dir: 3, plus: 3, col: 0 };
+  const ok = h.map((c, i) => i).filter(i => canPlay(h[i]));
+  if (!ok.length) { draw('c'); turn = 'h'; msg = 'המחשב לקח קלף · התור שלך'; return next(); }
+  const score = i => (rank[h[i].v] ?? 1) + Math.random();
+  play('c', ok.sort((a, b) => score(b) - score(a))[0]);
+}
+
+function humanClick(i) {
+  if (over || turn !== 'h' || pick || !canPlay(hands.h[i])) return;
+  play('h', i);
+}
+
+function humanDraw() {
+  if (over || turn !== 'h' || pick || taki) return;
+  draw('h'); turn = 'c'; msg = 'לקחת קלף · התור של המחשב'; next();
+}
+
+const bg = c => c.c === 'w' ? RAINBOW : COL[c.c];
+const face = (c, extra = '', click = '') =>
+  `<div class="card ${extra}" style="background:${bg(c)}" ${click}>${SYM[c.v] || c.v}</div>`;
+
+function render() {
+  const mine = turn === 'h' && !over && !pick;
+  document.getElementById('app').innerHTML = `
+    <div style="text-align:center">
+      <div id="msg">${msg}</div>
+      <small>קלפים למחשב: ${hands.c.length}</small>
+    </div>
+    <div class="row">${hands.c.map(() => '<div class="card back cpu"></div>').join('')}</div>
+    <div class="mid">
+      <div class="pile" onclick="humanDraw()" title="משוך קלף"><div class="card back">משוך</div></div>
+      <div class="card top" style="background:${bg(pileTop)};border-color:${COL[color]};border-width:6px">${SYM[pileTop.v] || pileTop.v}</div>
+      <div style="text-align:center">צבע נוכחי<br><b style="color:${COL[color]}">${NAMES[color]}</b></div>
+    </div>
+    ${pick ? `<div class="row pick">${Object.keys(COL).map(c =>
+        `<button style="background:${COL[c]}" onclick="setColor('${c}')" title="${NAMES[c]}"></button>`).join('')}</div>` : ''}
+    ${taki && mine ? '<button onclick="closeTaki()">סגור טאקי</button>' : ''}
+    <div class="row">${hands.h.map((c, i) =>
+        face(c, mine && canPlay(c) ? 'ok' : '', `data-h="${i}" onclick="humanClick(${i})"`)).join('')}</div>
+    <button onclick="newGame()">משחק חדש</button>`;
+  if (flyFrom) flyCard(flyFrom);
+  flyFrom = null;
+}
+
+function confetti() {
+  const colors = Object.values(COL).concat('#fff', '#f472b6');
+  for (let i = 0; i < 150; i++) {
+    const p = document.createElement('div'), size = 6 + Math.random() * 8;
+    p.style.cssText = `position:fixed;z-index:20;pointer-events:none;top:-20px;left:${Math.random() * 100}vw;` +
+      `width:${size}px;height:${size * 1.6}px;background:${colors[i % colors.length]}`;
+    document.body.appendChild(p);
+    const drift = (Math.random() - .5) * 300;
+    p.animate([
+      { transform: 'translate(0,0) rotate(0)', opacity: 1 },
+      { transform: `translate(${drift}px,${innerHeight + 40}px) rotate(${Math.random() * 1080}deg)`, opacity: 1 }
+    ], { duration: 2000 + Math.random() * 2500, delay: Math.random() * 600, easing: 'ease-in', fill: 'backwards' })
+      .onfinish = () => p.remove();
+  }
+}
+
+// Slide the played card from its old position onto the discard pile.
+function flyCard({ rect, card }) {
+  const t = document.querySelector('.card.top'), r = t.getBoundingClientRect();
+  const f = document.createElement('div');
+  f.className = 'card';
+  f.textContent = SYM[card.v] || card.v;
+  f.style.cssText = `position:fixed;z-index:9;pointer-events:none;transform-origin:0 0;left:${r.left}px;top:${r.top}px;` +
+    `width:${r.width}px;height:${r.height}px;background:${bg(card)};border-color:${COL[color]};border-width:6px;font-size:46px`;
+  document.body.appendChild(f);
+  t.style.visibility = 'hidden';
+  const move = `translate(${rect.left - r.left}px,${rect.top - r.top}px) scale(${rect.width / r.width})`;
+  f.animate([{ transform: move }, { transform: 'none' }], { duration: 450, easing: 'ease-out' })
+    .onfinish = () => { f.remove(); t.style.visibility = ''; };
+}
+
+newGame();
+</script>
+
+
+</body>
+</html>
