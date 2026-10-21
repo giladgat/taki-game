@@ -118,21 +118,33 @@ function toggleMute() {
   render();
 }
 
+// Mode 1 = against the computer, 2 = two players sharing one phone.
+// `viewer` is whose hand is shown at the bottom; between turns in mode 2 a cover hides the hands.
+let mode = '1', viewer = 'h', cover = false;
+try { mode = localStorage.getItem('mode') || '1'; } catch (e) {}
+const PN = p => p === 'h' ? 'שחקן 1' : 'שחקן 2';
+const TL = () => mode === '2' ? 'תור ' + PN(turn) : turn === 'h' ? 'התור שלך' : 'התור של המחשב';
+const canAct = () => !over && !pick && !cover && turn === viewer;
+function setMode(v) { mode = v; try { localStorage.setItem('mode', v); } catch (e) {} newGame(); }
+function reveal() { viewer = turn; cover = false; render(); }
+
 function newGame() {
   deck = fullDeck(); hands = { h: [], c: [] };
   draw('h', 8); draw('c', 8);
   do { pileTop = deck.pop(); if (!/^\d$/.test(pileTop.v)) { deck.unshift(pileTop); pileTop = null; } } while (!pileTop);
-  color = pileTop.c; turn = 'h'; taki = false; over = false; pick = false; msg = 'התור שלך';
+  color = pileTop.c; turn = 'h'; taki = false; over = false; pick = false; cover = false; viewer = 'h'; msg = TL();
   render();
 }
 
 function next() {
   render();
-  if (!over && turn === 'c') setTimeout(cpuTurn, 800);
+  if (over) return;
+  if (mode === '1' && turn === 'c') setTimeout(cpuTurn, 800);
+  if (mode === '2' && turn !== viewer && !cover) setTimeout(() => { if (!over && turn !== viewer) { cover = true; render(); } }, 900);
 }
 
 function play(w, i) {
-  const src = w === 'h' ? document.querySelector(`[data-h="${i}"]`)
+  const src = w === viewer ? document.querySelector(`[data-h="${i}"]`)
     : document.querySelectorAll('.card.cpu')[hands.c.length >> 1];
   const c = hands[w].splice(i, 1)[0];
   if (src) flyFrom = { rect: src.getBoundingClientRect(), card: c };
@@ -140,12 +152,12 @@ function play(w, i) {
   /^\d$/.test(c.v) ? SFX.play() : SFX.special();
   if (c.c !== 'w') color = c.c;
   if (c.v === 'taki') taki = true;
-  if (!hands[w].length) { over = true; msg = w === 'h' ? '🎉 ניצחת!' : '🤖 המחשב ניצח'; confetti(); w === 'h' ? SFX.win() : SFX.lose(); return next(); }
+  if (!hands[w].length) { over = true; msg = mode === '2' ? '🎉 ' + PN(w) + ' ניצח!' : w === 'h' ? '🎉 ניצחת!' : '🤖 המחשב ניצח'; confetti(); mode === '2' || w === 'h' ? SFX.win() : SFX.lose(); return next(); }
   if (c.c === 'w') {
-    if (w === 'h') { pick = true; msg = 'בחר צבע'; return next(); }
+    if (w === viewer) { pick = true; msg = 'בחר צבע'; return next(); }
     return setColor(level === '1' ? 'rygb'[Math.random() * 4 | 0] : mostCommon());
   }
-  if (taki) { msg = w === 'h' ? 'טאקי פתוח: שחק קלפים באותו צבע או סגור' : 'המחשב משחק טאקי…'; return next(); }
+  if (taki) { msg = w === viewer ? 'טאקי פתוח: שחק קלפים באותו צבע או סגור' : 'המחשב משחק טאקי…'; return next(); }
   endMove(w);
 }
 
@@ -155,10 +167,10 @@ function setColor(c) { SFX.color(); color = c; pick = false; endMove(turn); }
 function endMove(w) {
   const o = w === 'h' ? 'c' : 'h', v = pileTop.v;
   let note = '';
-  if (v === 'p2') { SFX.draw(); draw(o, 2); note = (o === 'c' ? 'המחשב' : 'אתה') + ' לוקח 2 קלפים · '; }
+  if (v === 'p2') { SFX.draw(); draw(o, 2); note = (mode === '2' ? PN(o) : o === 'c' ? 'המחשב' : 'אתה') + ' לוקח 2 קלפים · '; }
   else if (!['stop', 'dir', 'plus'].includes(v)) turn = o;
   else note = 'שחק שוב · ';
-  msg = note + (turn === 'h' ? 'התור שלך' : 'התור של המחשב');
+  msg = note + TL();
   next();
 }
 
@@ -201,13 +213,13 @@ function cpuTurn() {
 }
 
 function humanClick(i) {
-  if (over || turn !== 'h' || pick || !canPlay(hands.h[i])) return;
-  play('h', i);
+  if (!canAct() || !canPlay(hands[viewer][i])) return;
+  play(viewer, i);
 }
 
 function humanDraw() {
-  if (over || turn !== 'h' || pick || taki) return;
-  SFX.draw(); draw('h'); turn = 'c'; msg = 'לקחת קלף · התור של המחשב'; next();
+  if (!canAct() || taki) return;
+  SFX.draw(); draw(viewer); turn = viewer === 'h' ? 'c' : 'h'; msg = 'לקחת קלף · ' + TL(); next();
 }
 
 const bg = c => c.c === 'w' ? RAINBOW : COL[c.c];
@@ -215,13 +227,19 @@ const face = (c, extra = '', click = '') =>
   `<div class="card ${extra}" style="background:${bg(c)}" ${click}>${SYM[c.v] || c.v}</div>`;
 
 function render() {
-  const mine = turn === 'h' && !over && !pick;
-  document.getElementById('app').innerHTML = `
+  const app = document.getElementById('app');
+  if (cover) {
+    app.innerHTML = `<div id="msg" style="margin-top:20vh">העבר את הטלפון ל${PN(turn)}</div>
+      <button onclick="reveal()" style="font-size:22px;padding:14px 28px">אני מוכן</button>`;
+    return;
+  }
+  const mine = canAct(), other = viewer === 'h' ? 'c' : 'h';
+  app.innerHTML = `
     <div style="text-align:center">
       <div id="msg">${msg}</div>
-      <small>קלפים למחשב: ${hands.c.length}</small>
+      <small>${mode === '2' ? 'קלפים ל' + PN(other) : 'קלפים למחשב'}: ${hands[other].length}</small>
     </div>
-    <div class="row">${hands.c.map(() => '<div class="card back cpu"></div>').join('')}</div>
+    <div class="row">${hands[other].map(() => '<div class="card back cpu"></div>').join('')}</div>
     <div class="mid">
       <div class="pile" onclick="humanDraw()" title="משוך קלף"><div class="card back">משוך</div></div>
       <div class="card top" style="background:${bg(pileTop)};border-color:${COL[color]};border-width:6px">${SYM[pileTop.v] || pileTop.v}</div>
@@ -230,11 +248,14 @@ function render() {
     ${pick ? `<div class="row pick">${Object.keys(COL).map(c =>
         `<button style="background:${COL[c]}" onclick="setColor('${c}')" title="${NAMES[c]}"></button>`).join('')}</div>` : ''}
     ${taki && mine ? '<button onclick="closeTaki()">סגור טאקי</button>' : ''}
-    <div class="row">${hands.h.map((c, i) =>
+    <div class="row">${hands[viewer].map((c, i) =>
         face(c, mine && canPlay(c) ? 'ok' : '', `data-h="${i}" onclick="humanClick(${i})"`)).join('')}</div>
     <div class="row"><button onclick="newGame()">משחק חדש</button>
-      <select onchange="setLevel(this.value)" aria-label="רמת קושי">${[['1', 'קל'], ['2', 'בינוני'], ['3', 'קשה']].map(([v, t]) =>
-        `<option value="${v}" ${v === level ? 'selected' : ''}>${t}</option>`).join('')}</select>
+      <select onchange="setMode(this.value)" aria-label="מצב משחק">
+        <option value="1" ${mode === '1' ? 'selected' : ''}>נגד המחשב</option>
+        <option value="2" ${mode === '2' ? 'selected' : ''}>שני שחקנים</option></select>
+      ${mode === '1' ? `<select onchange="setLevel(this.value)" aria-label="רמת קושי">${[['1', 'קל'], ['2', 'בינוני'], ['3', 'קשה']].map(([v, t]) =>
+        `<option value="${v}" ${v === level ? 'selected' : ''}>${t}</option>`).join('')}</select>` : ''}
       <button onclick="toggleMute()" aria-label="צלילים">${muted ? '🔇' : '🔊'}</button></div>`;
   if (flyFrom) flyCard(flyFrom);
   flyFrom = null;
