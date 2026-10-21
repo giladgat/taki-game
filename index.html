@@ -39,6 +39,7 @@
   .card.top { width:clamp(64px,20vw,80px); aspect-ratio:80/116; font-size:clamp(32px,11vw,46px); }
   .pile { cursor:pointer; }
   select { font:inherit; padding:8px 12px; border:0; border-radius:8px; background:#2a3f6b; color:#fff; }
+  input { font:inherit; width:110px; padding:8px 12px; border:0; border-radius:8px; text-align:center; direction:ltr; }
   button { font:inherit; padding:8px 16px; border:0; border-radius:8px; background:#2a3f6b; color:#fff; cursor:pointer; }
   button:hover { background:#38538a; }
   .pick button { width:56px; height:56px; border-radius:50%; border:3px solid #fff; }
@@ -50,10 +51,11 @@
   <h1>טאקי</h1>
   <div id="app"></div>
 
+<script src="https://unpkg.com/peerjs@1.5.4/dist/peerjs.min.js"></script>
 <script>
 const COL = { r:'#ef4444', y:'#eab308', g:'#22c55e', b:'#3b82f6' };
 const NAMES = { r:'אדום', y:'צהוב', g:'ירוק', b:'כחול' };
-const SYM = { stop:'⛔', plus:'+', dir:'⇄', p2:'+2', col:'🌈', taki:'טאקי' };
+const SYM = { stop:'✋', plus:'+', dir:'⇄', p2:'+2', col:'🌈', taki:'טאקי' };
 const RAINBOW = 'conic-gradient(#ef4444,#eab308,#22c55e,#3b82f6,#ef4444)';
 let flyFrom, deck, hands, pileTop, color, turn, taki, over, pick, msg;
 
@@ -123,12 +125,94 @@ function toggleMute() {
 let mode = '1', viewer = 'h', cover = false;
 try { mode = localStorage.getItem('mode') || '1'; } catch (e) {}
 const PN = p => p === 'h' ? 'שחקן 1' : 'שחקן 2';
-const TL = () => mode === '2' ? 'תור ' + PN(turn) : turn === 'h' ? 'התור שלך' : 'התור של המחשב';
+const TL = () => mode !== '1' ? 'תור ' + PN(turn) : turn === 'h' ? 'התור שלך' : 'התור של המחשב';
 const canAct = () => !over && !pick && !cover && turn === viewer;
-function setMode(v) { mode = v; try { localStorage.setItem('mode', v); } catch (e) {} newGame(); }
+function setMode(v) { netReset(); mode = v; try { localStorage.setItem('mode', v); } catch (e) {} newGame(); }
+
+// Mode 3 (two phones): the host runs the game; the guest sends its moves and receives its own view of the state.
+let net = {}, winnerW = '', moveN = 0, lastN = 0;
+const guest = () => mode === '3' && net.role === 'guest';
+function netReset() {
+  try { net.peer && net.peer.destroy(); } catch (e) {}
+  net = { role: '', ready: false, code: '', status: '', conn: null, peer: null };
+}
+netReset();
+function lost() { netReset(); net.status = 'החיבור נותק'; render(); }
+const view = () => ({ mine: hands.c, opp: hands.h.length, top: pileTop, color, turn, taki, over, pick, msg, n: moveN, win: winnerW });
+
+function hostGame() {
+  if (typeof Peer === 'undefined') { net.status = 'אין חיבור לשרת, בדוק אינטרנט'; return render(); }
+  netReset(); net.role = 'host'; net.code = '' + (1000 + Math.random() * 9000 | 0); net.status = 'ממתין לשחקן השני…';
+  const p = net.peer = new Peer('taki-' + net.code);
+  p.on('error', e => { if (e.type === 'unavailable-id') return hostGame(); netReset(); net.status = 'שגיאת חיבור'; render(); });
+  p.on('connection', c => {
+    if (net.conn) return c.close();
+    net.conn = c;
+    c.on('open', () => { net.ready = true; newGame(); });
+    c.on('data', onData);
+    c.on('close', lost);
+  });
+  render();
+}
+
+function joinGame() {
+  const code = document.getElementById('code').value.trim();
+  if (typeof Peer === 'undefined' || !code) { net.status = code ? 'אין חיבור לשרת, בדוק אינטרנט' : 'הקלד קוד'; return render(); }
+  netReset(); net.role = 'guest'; net.status = 'מתחבר…';
+  const p = net.peer = new Peer();
+  p.on('error', () => { netReset(); net.status = 'לא נמצא משחק עם הקוד הזה'; render(); });
+  p.on('open', () => {
+    const c = net.conn = p.connect('taki-' + code);
+    c.on('data', applyView);
+    c.on('close', lost);
+  });
+  render();
+}
+
+// Host: a move arrives from the guest (player 'c').
+function onData(d) {
+  if (d.t === 'new') return newGame();
+  if (turn !== 'c' || over) return;
+  if (d.t === 'click' && !pick && hands.c[d.i] && canPlay(hands.c[d.i])) play('c', d.i);
+  else if (d.t === 'draw' && !pick && !taki) { SFX.draw(); draw('c'); turn = 'h'; msg = 'לקח קלף · ' + TL(); next(); }
+  else if (d.t === 'close' && taki && !pick) closeTaki();
+  else if (d.t === 'color' && pick) setColor(d.c);
+}
+
+// Guest: the host sent the current state.
+function applyView(v) {
+  const was = over;
+  hands = { h: Array.from({ length: v.opp }, () => ({})), c: v.mine };
+  pileTop = v.top; color = v.color; turn = v.turn; taki = v.taki; over = v.over; pick = v.pick; msg = v.msg; viewer = 'c';
+  net.ready = true;
+  if (v.n && v.n !== lastN) /^\d$/.test(v.top.v) ? SFX.play() : SFX.special();
+  lastN = v.n;
+  if (v.over && !was) { confetti(); v.win === 'c' ? SFX.win() : SFX.lose(); }
+  render();
+}
+
+function lobby() {
+  const st = net.status ? `<div>${net.status}</div>` : '';
+  if (net.role === 'host') return `<div id="msg">הקוד שלך: <span style="font-size:44px;letter-spacing:6px">${net.code}</span></div>${st}<small>הקלד את הקוד בטלפון השני</small>`;
+  if (net.role === 'guest') return `<div id="msg">${net.status}</div>`;
+  return `<div id="msg">משחק בין שני טלפונים</div>${st}
+    <button onclick="hostGame()">פתח משחק חדש</button>
+    <div class="row"><input id="code" inputmode="numeric" maxlength="4" placeholder="קוד"><button onclick="joinGame()">הצטרף</button></div>`;
+}
+
+const controls = () => `<div class="row"><button onclick="newGame()">משחק חדש</button>
+      <select onchange="setMode(this.value)" aria-label="מצב משחק">
+        <option value="1" ${mode === '1' ? 'selected' : ''}>נגד המחשב</option>
+        <option value="2" ${mode === '2' ? 'selected' : ''}>שני שחקנים, טלפון אחד</option>
+        <option value="3" ${mode === '3' ? 'selected' : ''}>שני טלפונים</option></select>
+      ${mode === '1' ? `<select onchange="setLevel(this.value)" aria-label="רמת קושי">${[['1', 'קל'], ['2', 'בינוני'], ['3', 'קשה']].map(([v, t]) =>
+        `<option value="${v}" ${v === level ? 'selected' : ''}>${t}</option>`).join('')}</select>` : ''}
+      <button onclick="toggleMute()" aria-label="צלילים">${muted ? '🔇' : '🔊'}</button></div>`;
 function reveal() { viewer = turn; cover = false; render(); }
 
 function newGame() {
+  if (guest()) return net.conn.send({ t: 'new' });
+  moveN = 0; winnerW = '';
   deck = fullDeck(); hands = { h: [], c: [] };
   draw('h', 8); draw('c', 8);
   do { pileTop = deck.pop(); if (!/^\d$/.test(pileTop.v)) { deck.unshift(pileTop); pileTop = null; } } while (!pileTop);
@@ -144,6 +228,7 @@ function next() {
 }
 
 function play(w, i) {
+  moveN++;
   const src = w === viewer ? document.querySelector(`[data-h="${i}"]`)
     : document.querySelectorAll('.card.cpu')[hands.c.length >> 1];
   const c = hands[w].splice(i, 1)[0];
@@ -152,29 +237,29 @@ function play(w, i) {
   /^\d$/.test(c.v) ? SFX.play() : SFX.special();
   if (c.c !== 'w') color = c.c;
   if (c.v === 'taki') taki = true;
-  if (!hands[w].length) { over = true; msg = mode === '2' ? '🎉 ' + PN(w) + ' ניצח!' : w === 'h' ? '🎉 ניצחת!' : '🤖 המחשב ניצח'; confetti(); mode === '2' || w === 'h' ? SFX.win() : SFX.lose(); return next(); }
+  if (!hands[w].length) { over = true; winnerW = w; msg = mode !== '1' ? '🎉 ' + PN(w) + ' ניצח!' : w === 'h' ? '🎉 ניצחת!' : '🤖 המחשב ניצח'; confetti(); mode === '2' || w === 'h' ? SFX.win() : SFX.lose(); return next(); }
   if (c.c === 'w') {
-    if (w === viewer) { pick = true; msg = 'בחר צבע'; return next(); }
+    if (w === viewer || mode === '3') { pick = true; msg = mode === '3' ? PN(w) + ' בוחר צבע' : 'בחר צבע'; return next(); }
     return setColor(level === '1' ? 'rygb'[Math.random() * 4 | 0] : mostCommon());
   }
-  if (taki) { msg = w === viewer ? 'טאקי פתוח: שחק קלפים באותו צבע או סגור' : 'המחשב משחק טאקי…'; return next(); }
+  if (taki) { msg = mode !== '1' ? PN(w) + ' פתח טאקי' : w === viewer ? 'טאקי פתוח: שחק קלפים באותו צבע או סגור' : 'המחשב משחק טאקי…'; return next(); }
   endMove(w);
 }
 
-function setColor(c) { SFX.color(); color = c; pick = false; endMove(turn); }
+function setColor(c) { if (guest()) return net.conn.send({ t: 'color', c }); SFX.color(); color = c; pick = false; endMove(turn); }
 
 // Stop / direction change / plus / +2 give the same player another turn (2 players).
 function endMove(w) {
   const o = w === 'h' ? 'c' : 'h', v = pileTop.v;
   let note = '';
-  if (v === 'p2') { SFX.draw(); draw(o, 2); note = (mode === '2' ? PN(o) : o === 'c' ? 'המחשב' : 'אתה') + ' לוקח 2 קלפים · '; }
+  if (v === 'p2') { SFX.draw(); draw(o, 2); note = (mode !== '1' ? PN(o) : o === 'c' ? 'המחשב' : 'אתה') + ' לוקח 2 קלפים · '; }
   else if (!['stop', 'dir', 'plus'].includes(v)) turn = o;
   else note = 'שחק שוב · ';
   msg = note + TL();
   next();
 }
 
-function closeTaki() { taki = false; endMove(turn); }
+function closeTaki() { if (guest()) return net.conn.send({ t: 'close' }); taki = false; endMove(turn); }
 
 function mostCommon() {
   const n = { r: 0, y: 0, g: 0, b: 0 };
@@ -213,11 +298,13 @@ function cpuTurn() {
 }
 
 function humanClick(i) {
+  if (guest()) { if (canAct() && canPlay(hands.c[i])) net.conn.send({ t: 'click', i }); return; }
   if (!canAct() || !canPlay(hands[viewer][i])) return;
   play(viewer, i);
 }
 
 function humanDraw() {
+  if (guest()) { if (canAct() && !taki) net.conn.send({ t: 'draw' }); return; }
   if (!canAct() || taki) return;
   SFX.draw(); draw(viewer); turn = viewer === 'h' ? 'c' : 'h'; msg = 'לקחת קלף · ' + TL(); next();
 }
@@ -233,11 +320,12 @@ function render() {
       <button onclick="reveal()" style="font-size:22px;padding:14px 28px">אני מוכן</button>`;
     return;
   }
+  if (mode === '3' && !net.ready) { app.innerHTML = lobby() + controls(); return; }
   const mine = canAct(), other = viewer === 'h' ? 'c' : 'h';
   app.innerHTML = `
     <div style="text-align:center">
       <div id="msg">${msg}</div>
-      <small>${mode === '2' ? 'קלפים ל' + PN(other) : 'קלפים למחשב'}: ${hands[other].length}</small>
+      <small>${mode !== '1' ? 'קלפים ל' + PN(other) : 'קלפים למחשב'}: ${hands[other].length}</small>${mode === '3' ? `<br><small>אתה ${PN(viewer)}</small>` : ''}
     </div>
     <div class="row">${hands[other].map(() => '<div class="card back cpu"></div>').join('')}</div>
     <div class="mid">
@@ -245,18 +333,13 @@ function render() {
       <div class="card top" style="background:${bg(pileTop)};border-color:${COL[color]};border-width:6px">${SYM[pileTop.v] || pileTop.v}</div>
       <div style="text-align:center">צבע נוכחי<br><b style="color:${COL[color]}">${NAMES[color]}</b></div>
     </div>
-    ${pick ? `<div class="row pick">${Object.keys(COL).map(c =>
+    ${pick && turn === viewer ? `<div class="row pick">${Object.keys(COL).map(c =>
         `<button style="background:${COL[c]}" onclick="setColor('${c}')" title="${NAMES[c]}"></button>`).join('')}</div>` : ''}
     ${taki && mine ? '<button onclick="closeTaki()">סגור טאקי</button>' : ''}
     <div class="row">${hands[viewer].map((c, i) =>
         face(c, mine && canPlay(c) ? 'ok' : '', `data-h="${i}" onclick="humanClick(${i})"`)).join('')}</div>
-    <div class="row"><button onclick="newGame()">משחק חדש</button>
-      <select onchange="setMode(this.value)" aria-label="מצב משחק">
-        <option value="1" ${mode === '1' ? 'selected' : ''}>נגד המחשב</option>
-        <option value="2" ${mode === '2' ? 'selected' : ''}>שני שחקנים</option></select>
-      ${mode === '1' ? `<select onchange="setLevel(this.value)" aria-label="רמת קושי">${[['1', 'קל'], ['2', 'בינוני'], ['3', 'קשה']].map(([v, t]) =>
-        `<option value="${v}" ${v === level ? 'selected' : ''}>${t}</option>`).join('')}</select>` : ''}
-      <button onclick="toggleMute()" aria-label="צלילים">${muted ? '🔇' : '🔊'}</button></div>`;
+    ${controls()}`;
+  if (mode === '3' && net.role === 'host' && net.ready && net.conn.open) net.conn.send(view());
   if (flyFrom) flyCard(flyFrom);
   flyFrom = null;
 }
