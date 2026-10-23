@@ -44,19 +44,27 @@
   #msg { font-size:20px; font-weight:600; min-height:28px; }
   .row { display:flex; gap:6px; flex-wrap:wrap; justify-content:center; max-width:900px; }
   .mid { display:flex; gap:clamp(12px,5vw,28px); align-items:center; justify-content:center; margin:6px 0; }
-  .card { transition:transform .2s ease; width:clamp(46px,14.5vw,62px); aspect-ratio:62/90; flex:none; border-radius:10px; border:3px solid #fff; color:#fff; font-size:clamp(24px,8vw,34px);
-          font-family:"Permanent Marker", Impact, "Marker Felt", cursive; letter-spacing:1px;
-          -webkit-text-stroke:2px #111; paint-order:stroke fill; transform:rotate(-4deg);
-          display:flex; align-items:center; justify-content:center;
-          text-shadow:3px 3px 0 #111, 5px 5px 0 #fff6; user-select:none;
-          box-shadow:0 3px 8px #0006; }
-  .card.back { transform:none; font-size:18px; background:repeating-linear-gradient(45deg,#1e293b,#1e293b 6px,#334155 6px,#334155 12px); }
-  .card.ok { cursor:pointer; transform:rotate(-4deg) translateY(-8px); border-color:#fde047; }
+  /* Cards: cream card stock, a glossy coloured panel, a white oval with the symbol and corner indices. */
+  .card { position:relative; transition:transform .2s ease; width:clamp(46px,14.5vw,62px); aspect-ratio:62/90; flex:none; border-radius:9px;
+          background:#fbf8ef; color:var(--c, #fff); font-size:clamp(24px,8vw,34px); overflow:hidden; isolation:isolate; user-select:none;
+          font-family:"Permanent Marker", Impact, "Marker Felt", cursive; transform:rotate(-4deg);
+          box-shadow:0 1px 1px #0006, 0 5px 10px #0007, inset 0 0 0 1px #0002; }
+  .card::before { content:""; position:absolute; z-index:-1; inset:4.5%; border-radius:6px; background:var(--panel, var(--c)); }
+  .card::after { content:""; position:absolute; inset:0; border-radius:inherit; pointer-events:none;
+          background:linear-gradient(115deg, #ffffff66 0%, #ffffff00 38%, #00000026 100%), url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='120' height='120'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='.9' numOctaves='2' stitchTiles='stitch'/%3E%3CfeColorMatrix values='0 0 0 0 0  0 0 0 0 0  0 0 0 0 0  0 0 0 .4 -.1'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E"); }
+  .card .face { position:absolute; left:50%; top:50%; width:76%; height:58%; translate:-50% -50%; rotate:-22deg; border-radius:50%;
+          background:#fffdf7; display:flex; align-items:center; justify-content:center; box-shadow:inset 0 0 0 1.5px #0002, 0 1px 3px #0006; }
+  .card .face b { rotate:22deg; font-weight:400; line-height:1; -webkit-text-stroke:1.5px #111; paint-order:stroke fill; }
+  .card .face b.long { font-size:.5em; }
+  .card .ix { position:absolute; z-index:1; top:7%; left:10%; font-style:normal; font-size:.36em; line-height:1; color:#fff; text-shadow:0 1px 1px #000a; }
+  .card .ix.b { top:auto; left:auto; bottom:7%; right:10%; rotate:180deg; }
+  .card.back { transform:none; font-size:15px; color:#f5e7b8; display:flex; align-items:center; justify-content:center; text-align:center; }
+  .card.back::before { background:repeating-linear-gradient(45deg, #7a1f2b 0 5px, #5a1520 5px 10px); }
+  .card.ok { cursor:pointer; transform:rotate(-4deg) translateY(-8px); box-shadow:0 0 0 3px #fde047, 0 8px 14px #000a; }
   .card.ok:hover { transform:rotate(-4deg) translateY(-14px); }
   .stack { position:relative; width:clamp(64px,20vw,80px); aspect-ratio:80/116; }
   .card.top { position:relative; width:100%; aspect-ratio:80/116; font-size:clamp(32px,11vw,46px); }
-  .card.under { position:absolute; left:0; top:0; width:100%; height:100%; aspect-ratio:auto; font-size:clamp(32px,11vw,46px);
-                filter:brightness(.75); border-width:4px; }
+  .card.under { position:absolute; left:0; top:0; width:100%; height:100%; aspect-ratio:auto; font-size:clamp(32px,11vw,46px); filter:brightness(.75); }
   .pile { cursor:pointer; }
   select { font:inherit; padding:8px 12px; border:0; border-radius:8px; background:#2a3f6b; color:#fff; }
   input { font:inherit; width:110px; padding:8px 12px; border:0; border-radius:8px; text-align:center; direction:ltr; }
@@ -410,9 +418,13 @@ function humanDraw() {
   takeCards(viewer);
 }
 
-const bg = c => c.c === 'w' ? RAINBOW : COL[c.c];
+const cv = c => c.c === 'w' ? `--c:#1f2937;--panel:${RAINBOW}` : `--c:${COL[c.c]}`;
+const inner = c => {
+  const t = SYM[c.v] || c.v, ix = c.v === 'taki' ? 'ט' : t;
+  return `<i class="ix">${ix}</i><i class="ix b">${ix}</i><span class="face"><b${t.length > 2 ? ' class="long"' : ''}>${t}</b></span>`;
+};
 const face = (c, extra = '', click = '') =>
-  `<div class="card ${extra}" style="background:${bg(c)}" ${click}>${SYM[c.v] || c.v}</div>`;
+  `<div class="card ${extra}" style="${cv(c)}" ${click}>${inner(c)}</div>`;
 
 function render() {
   const app = document.getElementById('app');
@@ -435,8 +447,8 @@ function render() {
     <div class="row">${hands[other].map(() => '<div class="card back cpu"></div>').join('')}</div>
     <div class="mid">
       <div class="pile" onclick="humanDraw()" title="משוך קלף"><div class="card back">משוך${penalty ? '<br>' + penalty : ''}</div></div>
-      <div class="stack">${pile.map(c => `<div class="card under" style="background:${bg(c)};transform:translate(${c.x}px,${c.y}px) rotate(${c.r}deg)">${SYM[c.v] || c.v}</div>`).join('')}
-        <div class="card top" style="background:${bg(pileTop)};border-color:${COL[color]};border-width:6px">${SYM[pileTop.v] || pileTop.v}</div></div>
+      <div class="stack">${pile.map(c => `<div class="card under" style="${cv(c)};transform:translate(${c.x}px,${c.y}px) rotate(${c.r}deg)">${inner(c)}</div>`).join('')}
+        <div class="card top" style="${cv(pileTop)};box-shadow:0 0 0 4px ${COL[color]}, 0 6px 12px #000a">${inner(pileTop)}</div></div>
       <div style="text-align:center">צבע נוכחי<br><b style="color:${COL[color]}">${NAMES[color]}</b></div>
     </div>
     ${pick && turn === viewer ? `<div class="row pick">${Object.keys(COL).map(c =>
@@ -520,9 +532,9 @@ function flyCard({ rect, card }) {
   const t = document.querySelector('.card.top'), r = t.getBoundingClientRect();
   const f = document.createElement('div');
   f.className = 'card';
-  f.textContent = SYM[card.v] || card.v;
+  f.innerHTML = inner(card);
   f.style.cssText = `position:fixed;z-index:9;pointer-events:none;transition:none;left:${r.left}px;top:${r.top}px;` +
-    `width:${r.width}px;height:${r.height}px;background:${bg(card)};border-color:${COL[color]};border-width:6px;font-size:clamp(32px,11vw,46px)`;
+    `width:${r.width}px;height:${r.height}px;${cv(card)};box-shadow:0 0 0 4px ${COL[color]}, 0 10px 20px #000a;font-size:clamp(32px,11vw,46px)`;
   document.body.appendChild(f);
   t.style.visibility = 'hidden';
   const dx = rect.left + rect.width / 2 - (r.left + r.width / 2), dy = rect.top + rect.height / 2 - (r.top + r.height / 2);
