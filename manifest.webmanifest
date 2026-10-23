@@ -3,8 +3,8 @@
   "short_name": "טאקי שאיתי יצר",
   "start_url": "./",
   "display": "standalone",
-  "background_color": "#2a8157",
-  "theme_color": "#2a8157",
+  "background_color": "#236c4a",
+  "theme_color": "#236c4a",
   "icons": [
     { "src": "icon-180-v2.png", "sizes": "180x180", "type": "image/png" },
     { "src": "icon-512-v2.png", "sizes": "512x512", "type": "image/png" }
