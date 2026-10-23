@@ -433,23 +433,23 @@ function flyCard({ rect, card }) {
     .onfinish = () => { f.remove(); t.style.visibility = ''; ripple(r); };
 }
 
-// When a card lands, a small wave spreads from the pile and nudges the felt.
+// When a card lands, slow waves spread out from the pile. Nothing else on the page moves.
 function ripple(r) {
   if (window.matchMedia?.('(prefers-reduced-motion: reduce)')?.matches) return;
   const x = r.left + r.width / 2, y = r.top + r.height / 2;
+  // The clipping layer keeps the big rings from ever adding scroll width.
+  const layer = document.createElement('div');
+  layer.style.cssText = 'position:fixed;inset:0;z-index:1;overflow:hidden;pointer-events:none';
+  document.body.appendChild(layer);
+  let left = 3;
   for (let k = 0; k < 3; k++) {
     const w = document.createElement('div');
-    w.style.cssText = `position:fixed;z-index:1;pointer-events:none;border-radius:50%;border:3px solid #ffffffcc;box-shadow:0 0 14px #ffffff88, inset 0 0 10px #ffffff55;` +
+    w.style.cssText = `position:absolute;border-radius:50%;border:2px solid #ffffffbb;box-shadow:0 0 14px #ffffff88, inset 0 0 10px #ffffff55;` +
       `width:90px;height:90px;left:${x - 45}px;top:${y - 45}px`;
-    document.body.appendChild(w);
-    w.animate([{ scale: .2, opacity: 1 }, { scale: 7, opacity: 0 }],
-      { duration: 1400, delay: k * 160, easing: 'ease-out', fill: 'backwards' }).onfinish = () => w.remove();
+    layer.appendChild(w);
+    w.animate([{ scale: .2, opacity: 1 }, { scale: 15, opacity: 0 }],
+      { duration: 2800, delay: k * 380, easing: 'ease-out', fill: 'backwards' }).onfinish = () => { if (!--left) layer.remove(); };
   }
-  try {
-    document.body.animate([
-      { transform: 'scale(1)' }, { transform: 'scale(1.025)', offset: .3 }, { transform: 'scale(1)' }
-    ], { duration: 800, easing: 'ease-out', pseudoElement: '::after' });
-  } catch (e) {}
 }
 
 // Remaining hand cards slide to their new places; drawn cards slide in from the pile.
