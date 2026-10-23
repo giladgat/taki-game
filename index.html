@@ -32,6 +32,12 @@
   #app { position:relative; z-index:2; display:flex; flex-direction:column; align-items:center; gap:14px; max-width:100%; }
   h1 { position:relative; z-index:2; margin:0; font-size:28px; }
   @media (max-width:520px) { h1 { margin-top:34px; } }  /* leave room for the win counter in the corner */
+  .xp { display:flex; gap:8px; align-items:center; justify-content:center; font-size:13px; font-weight:700; }
+  .xp span { width:120px; height:8px; border-radius:99px; background:#0007; overflow:hidden; display:inline-block; }
+  .xp b { display:block; height:100%; background:linear-gradient(90deg, #fde047, #f59e0b); }
+  .result { font-size:15px; font-weight:700; color:#fde047; }
+  button.big { font-size:20px; padding:12px 28px; background:#f59e0b; color:#1b1206; font-weight:800; }
+  button.big:hover { background:#fbbf24; }
   #wins { position:absolute; z-index:5; top:calc(env(safe-area-inset-top, 0px) + 46px); right:calc(env(safe-area-inset-right, 0px) + 50px);
           padding:4px 12px; border:2px solid #fde047; border-radius:999px; background:#0009; font-size:16px; font-weight:700; direction:ltr; }
   #msg { font-size:20px; font-weight:600; min-height:28px; }
@@ -144,16 +150,56 @@ const TL = () => mode !== '1' ? 'תור ' + PN(turn) : turn === 'h' ? 'התור 
 const canAct = () => !over && !pick && !cover && turn === viewer;
 function setMode(v) { netReset(); mode = v; try { localStorage.setItem('mode', v); } catch (e) {} newGame(); }
 
-// All-time win counter, kept on this device. Counts your wins against the computer and online;
-// a shared-phone game has no single player, so it isn't counted.
-let wins = 0;
-try { wins = +localStorage.getItem('wins') || 0; } catch (e) {}
+// Progress is kept on this device: wins, win streak, XP / level and achievements.
+// Shared-phone games (mode 2) have no single player, so they aren't recorded.
+let st = { games: 0, wins: 0, losses: 0, streak: 0, best: 0, xp: 0, ach: {} };
+try { Object.assign(st, JSON.parse(localStorage.getItem('taki-stats')) || { wins: +localStorage.getItem('wins') || 0 }); } catch (e) {}
+let game = { chain: 0, maxPen: 0 }, result = null;
+const save = () => { try { localStorage.setItem('taki-stats', JSON.stringify(st)); } catch (e) {} };
+const lvlOf = xp => Math.floor(Math.sqrt(xp / 100)) + 1;       // level n starts at 100 * (n - 1)^2 XP
+const unlock = id => !st.ach[id] && (st.ach[id] = 1);
+
 function showWins(bump) {
   const el = document.getElementById('wins');
-  el.textContent = '🏆 ' + wins;
+  el.textContent = '🏆 ' + st.wins + (st.streak > 1 ? '  🔥 ' + st.streak : '');
   if (bump) el.animate?.([{ scale: 1 }, { scale: 1.5 }, { scale: 1 }], { duration: 700 });
 }
-function addWin() { wins++; try { localStorage.setItem('wins', wins); } catch (e) {} showWins(true); }
+
+function toast(text) {
+  const t = document.createElement('div');
+  t.textContent = text;
+  t.style.cssText = 'position:fixed;z-index:30;left:50%;top:calc(env(safe-area-inset-top,0px) + 64px);translate:-50% 0;padding:10px 18px;' +
+    'border-radius:999px;background:#111d;border:2px solid #fde047;color:#fff;font-weight:700;pointer-events:none;white-space:nowrap';
+  document.body.appendChild(t);
+  const a = t.animate([{ opacity: 0, translate: '-50% -20px' }, { opacity: 1, translate: '-50% 0', offset: .12 }, { opacity: 1, offset: .85 }, { opacity: 0 }],
+    { duration: 2400 });
+  a.onfinish = () => t.remove();
+  SFX.color();
+}
+
+function record(win, oppLeft) {
+  const before = lvlOf(st.xp);
+  st.games++;
+  if (win) { st.wins++; st.streak++; st.best = Math.max(st.best, st.streak); } else { st.losses++; st.streak = 0; }
+  const gain = win ? 100 + Math.min(st.streak, 5) * 20 + (mode === '1' ? { 1: 0, 2: 10, 3: 30 }[level] : 20) : 30;
+  st.xp += gain;
+  const got = [], u = (id, name) => unlock(id) && got.push(name);
+  if (win) {
+    u('first', 'ניצחון ראשון');
+    if (st.streak >= 3) u('s3', '3 ניצחונות ברצף');
+    if (st.streak >= 5) u('s5', '5 ניצחונות ברצף');
+    if (st.wins >= 10) u('w10', '10 ניצחונות');
+    if (mode === '1' && level === '3') u('hard', 'ניצחון על המחשב הקשה');
+    if (oppLeft >= 7) u('crush', 'ניצחון מוחץ');
+    if (game.maxPen >= 6) u('stack', 'ערימת +2 ענקית');
+  }
+  save();
+  const lv = lvlOf(st.xp);
+  result = { win, gain, up: lv > before, lv };
+  showWins(true);
+  if (result.up) setTimeout(() => toast('⬆️ עלית לרמה ' + lv), 500);
+  got.forEach((n, i) => setTimeout(() => toast('🏅 הישג חדש: ' + n), 500 + (result.up ? 2000 : 0) + i * 2000));
+}
 
 // Mode 3 (two phones): the host runs the game; the guest sends its moves and receives its own view of the state.
 let net = {}, winnerW = '', moveN = 0, lastN = 0;
@@ -214,11 +260,11 @@ function applyView(v) {
     if (el) flyFrom = { rect: el.getBoundingClientRect(), card: v.top };
   }
   hands = { h: Array.from({ length: v.opp }, () => ({})), c: v.mine };
-  pileTop = v.top; color = v.color; turn = v.turn; taki = v.taki; over = v.over; pick = v.pick; msg = v.msg; penalty = v.penalty; pile = v.pile || []; viewer = 'c';
+  pileTop = v.top; color = v.color; turn = v.turn; taki = v.taki; over = v.over; pick = v.pick; msg = v.msg; penalty = v.penalty; game.maxPen = v.n ? Math.max(game.maxPen, v.penalty) : 0; pile = v.pile || []; viewer = 'c';
   net.ready = true;
   if (v.n && v.n !== lastN) /^\d$/.test(v.top.v) ? SFX.play() : SFX.special();
   lastN = v.n;
-  if (v.over && !was) { if (v.win === 'c') addWin(); confetti(); v.win === 'c' ? SFX.win() : SFX.lose(); }
+  if (v.over && !was) { record(v.win === 'c', hands.h.length); confetti(); v.win === 'c' ? SFX.win() : SFX.lose(); }
   render();
 }
 
@@ -245,7 +291,7 @@ function newGame() {
   plays = 0;
   noAnim = true;
   if (guest()) return net.conn.send({ t: 'new' });
-  moveN = 0; winnerW = ''; penalty = 0; pile = [];
+  moveN = 0; winnerW = ''; penalty = 0; pile = []; game = { chain: 0, maxPen: 0 }; result = null;
   deck = fullDeck(); hands = { h: [], c: [] };
   draw('h', 8); draw('c', 8);
   do { pileTop = deck.pop(); if (!/^\d$/.test(pileTop.v)) { deck.unshift(pileTop); pileTop = null; } } while (!pileTop);
@@ -272,12 +318,13 @@ function play(w, i) {
   /^\d$/.test(c.v) ? SFX.play() : SFX.special();
   if (c.c !== 'w') color = c.c;
   if (c.v === 'taki') taki = true;
-  if (!hands[w].length) { over = true; winnerW = w; if (mode === '1' && w === 'h' || mode === '3' && w === viewer) addWin(); msg = mode !== '1' ? '🎉 ' + PN(w) + ' ניצח!' : w === 'h' ? '🎉 ניצחת!' : '🤖 המחשב ניצח'; confetti(); mode === '2' || w === 'h' ? SFX.win() : SFX.lose(); return next(); }
+  if (taki && w === viewer && mode !== '2' && ++game.chain >= 5 && unlock('chain')) toast('🏅 הישג חדש: שרשרת טאקי של 5 קלפים'), save();
+  if (!hands[w].length) { over = true; winnerW = w; if (mode === '1' || mode === '3') record(w === viewer, hands[w === 'h' ? 'c' : 'h'].length); msg = mode !== '1' ? '🎉 ' + PN(w) + ' ניצח!' : w === 'h' ? '🎉 ניצחת!' : '🤖 המחשב ניצח'; confetti(); mode === '2' || w === 'h' ? SFX.win() : SFX.lose(); return next(); }
   if (c.c === 'w') {
     if (w === viewer || mode === '3') { pick = true; msg = mode === '3' ? PN(w) + ' בוחר צבע' : 'בחר צבע'; return next(); }
     return setColor(level === '1' ? 'rygb'[Math.random() * 4 | 0] : mostCommon());
   }
-  if (taki) { msg = mode !== '1' ? PN(w) + ' פתח טאקי' : w === viewer ? 'טאקי פתוח: שחק קלפים באותו צבע או סגור' : 'המחשב משחק טאקי…'; return next(); }
+  if (taki) { msg = mode !== '1' ? PN(w) + ' פתח טאקי' : w === viewer ? 'טאקי פתוח · קומבו ' + game.chain + ': שחק באותו צבע או סגור' : 'המחשב משחק טאקי…'; return next(); }
   endMove(w);
 }
 
@@ -287,14 +334,14 @@ function setColor(c) { if (guest()) return net.conn.send({ t: 'color', c }); SFX
 function endMove(w) {
   const o = w === 'h' ? 'c' : 'h', v = pileTop.v;
   let note = '';
-  if (v === 'p2') { penalty += 2; turn = o; note = '+' + penalty + ': לקחת קלפים או להניח +2 · '; }
+  if (v === 'p2') { penalty += 2; game.maxPen = Math.max(game.maxPen, penalty); turn = o; note = '+' + penalty + ': לקחת קלפים או להניח +2 · '; }
   else if (!['stop', 'dir', 'plus'].includes(v)) turn = o;
   else note = 'שחק שוב · ';
   msg = note + TL();
   next();
 }
 
-function closeTaki() { if (guest()) return net.conn.send({ t: 'close' }); taki = false; endMove(turn); }
+function closeTaki() { if (guest()) return net.conn.send({ t: 'close' }); taki = false; game.chain = 0; endMove(turn); }
 
 function mostCommon() {
   const n = { r: 0, y: 0, g: 0, b: 0 };
@@ -375,7 +422,10 @@ function render() {
   const mine = canAct(), other = viewer === 'h' ? 'c' : 'h';
   app.innerHTML = `
     <div style="text-align:center">
+      <div class="xp">רמה ${lvlOf(st.xp)}<span><b style="width:${Math.round(100 * (st.xp - 100 * (lvlOf(st.xp) - 1) ** 2) / (100 * (2 * lvlOf(st.xp) - 1)))}%"></b></span></div>
       <div id="msg">${msg}</div>
+      ${over && result && mode !== '2' ? `<div class="result">${result.win ? '🎉' : '💪'} +${result.gain} XP${st.streak > 1 ? ' · 🔥 ' + st.streak + ' ברצף' : ''}${result.up ? ' · ⬆️ רמה ' + result.lv : ''}</div>` : ''}
+      ${over ? '<button class="big" onclick="newGame()">עוד משחק! ▶</button>' : ''}
       <small>${mode !== '1' ? 'קלפים ל' + PN(other) : 'קלפים למחשב'}: ${hands[other].length}</small>${mode === '3' ? `<br><small>אתה ${PN(viewer)}</small>` : ''}
     </div>
     <div class="row">${hands[other].map(() => '<div class="card back cpu"></div>').join('')}</div>
