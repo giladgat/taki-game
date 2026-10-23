@@ -45,8 +45,8 @@
   .row { display:flex; gap:6px; flex-wrap:wrap; justify-content:center; max-width:900px; }
   .mid { display:flex; gap:clamp(12px,5vw,28px); align-items:center; justify-content:center; margin:6px 0; }
   /* Cards: cream card stock, a glossy coloured panel, a white oval with the symbol and corner indices. */
-  .card { position:relative; transition:transform .2s ease; width:clamp(46px,14.5vw,62px); aspect-ratio:62/90; flex:none; border-radius:9px;
-          background:#fbf8ef; color:var(--c, #fff); font-size:clamp(24px,8vw,34px); overflow:hidden; isolation:isolate; user-select:none;
+  .card { position:relative; transition:transform .2s ease; width:clamp(60px,18.5vw,90px); aspect-ratio:62/90; flex:none; border-radius:9px;
+          background:#fbf8ef; color:var(--c, #fff); font-size:clamp(30px,10vw,44px); overflow:hidden; isolation:isolate; user-select:none;
           font-family:"Permanent Marker", Impact, "Marker Felt", cursive; transform:rotate(-4deg);
           box-shadow:0 1px 1px #0006, 0 5px 10px #0007, inset 0 0 0 1px #0002; }
   .card::before { content:""; position:absolute; z-index:-1; inset:4.5%; border-radius:6px; background:var(--panel, var(--c)); }
@@ -60,11 +60,12 @@
   .card .ix.b { top:auto; left:auto; bottom:7%; right:10%; rotate:180deg; }
   .card.back { transform:none; font-size:15px; color:#f5e7b8; display:flex; align-items:center; justify-content:center; text-align:center; }
   .card.back::before { background:repeating-linear-gradient(45deg, #7a1f2b 0 5px, #5a1520 5px 10px); }
+  .card.cpu { width:clamp(44px,13vw,64px); }
   .card.ok { cursor:pointer; transform:rotate(-4deg) translateY(-8px); box-shadow:0 0 0 3px #fde047, 0 8px 14px #000a; }
   .card.ok:hover { transform:rotate(-4deg) translateY(-14px); }
-  .stack { position:relative; width:clamp(64px,20vw,80px); aspect-ratio:80/116; }
-  .card.top { position:relative; width:100%; aspect-ratio:80/116; font-size:clamp(32px,11vw,46px); }
-  .card.under { position:absolute; left:0; top:0; width:100%; height:100%; aspect-ratio:auto; font-size:clamp(32px,11vw,46px); filter:brightness(.75); }
+  .stack { position:relative; width:clamp(84px,25vw,116px); aspect-ratio:80/116; }
+  .card.top { position:relative; width:100%; aspect-ratio:80/116; font-size:clamp(42px,14vw,58px); }
+  .card.under { position:absolute; left:0; top:0; width:100%; height:100%; aspect-ratio:auto; font-size:clamp(42px,14vw,58px); filter:brightness(.75); }
   .pile { cursor:pointer; }
   select { font:inherit; padding:8px 12px; border:0; border-radius:8px; background:#2a3f6b; color:#fff; }
   input { font:inherit; width:110px; padding:8px 12px; border:0; border-radius:8px; text-align:center; direction:ltr; }
@@ -534,7 +535,7 @@ function flyCard({ rect, card }) {
   f.className = 'card';
   f.innerHTML = inner(card);
   f.style.cssText = `position:fixed;z-index:9;pointer-events:none;transition:none;left:${r.left}px;top:${r.top}px;` +
-    `width:${r.width}px;height:${r.height}px;${cv(card)};box-shadow:0 0 0 4px ${COL[color]}, 0 10px 20px #000a;font-size:clamp(32px,11vw,46px)`;
+    `width:${r.width}px;height:${r.height}px;${cv(card)};box-shadow:0 0 0 4px ${COL[color]}, 0 10px 20px #000a;font-size:clamp(42px,14vw,58px)`;
   document.body.appendChild(f);
   t.style.visibility = 'hidden';
   const dx = rect.left + rect.width / 2 - (r.left + r.width / 2), dy = rect.top + rect.height / 2 - (r.top + r.height / 2);
