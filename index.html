@@ -38,7 +38,10 @@
   .card.back { transform:none; font-size:18px; background:repeating-linear-gradient(45deg,#1e293b,#1e293b 6px,#334155 6px,#334155 12px); }
   .card.ok { cursor:pointer; transform:rotate(-4deg) translateY(-8px); border-color:#fde047; }
   .card.ok:hover { transform:rotate(-4deg) translateY(-14px); }
-  .card.top { width:clamp(64px,20vw,80px); aspect-ratio:80/116; font-size:clamp(32px,11vw,46px); }
+  .stack { position:relative; width:clamp(64px,20vw,80px); aspect-ratio:80/116; }
+  .card.top { position:relative; width:100%; aspect-ratio:80/116; font-size:clamp(32px,11vw,46px); }
+  .card.under { position:absolute; left:0; top:0; width:100%; height:100%; aspect-ratio:auto; font-size:clamp(32px,11vw,46px);
+                filter:brightness(.75); border-width:4px; }
   .pile { cursor:pointer; }
   select { font:inherit; padding:8px 12px; border:0; border-radius:8px; background:#2a3f6b; color:#fff; }
   input { font:inherit; width:110px; padding:8px 12px; border:0; border-radius:8px; text-align:center; direction:ltr; }
@@ -60,7 +63,7 @@ const COL = { r:'#ef4444', y:'#eab308', g:'#22c55e', b:'#3b82f6' };
 const NAMES = { r:'אדום', y:'צהוב', g:'ירוק', b:'כחול' };
 const SYM = { stop:'✋', plus:'+', dir:'⇄', p2:'+2', col:'🌈', taki:'טאקי' };
 const RAINBOW = 'conic-gradient(#ef4444,#eab308,#22c55e,#3b82f6,#ef4444)';
-let penalty = 0, flyFrom, deck, hands, pileTop, color, turn, taki, over, pick, msg;
+let pile = [], penalty = 0, flyFrom, deck, hands, pileTop, color, turn, taki, over, pick, msg;
 
 const shuffle = a => { for (let i = a.length - 1; i > 0; i--) { const j = Math.random() * (i + 1) | 0; [a[i], a[j]] = [a[j], a[i]]; } return a; };
 
@@ -153,7 +156,7 @@ function netReset() {
 }
 netReset();
 function lost() { netReset(); net.status = 'החיבור נותק'; render(); }
-const view = () => ({ mine: hands.c, opp: hands.h.length, top: pileTop, color, turn, taki, over, pick, msg, n: moveN, win: winnerW, penalty });
+const view = () => ({ mine: hands.c, opp: hands.h.length, top: pileTop, color, turn, taki, over, pick, msg, n: moveN, win: winnerW, penalty, pile });
 
 function hostGame() {
   if (typeof Peer === 'undefined') { net.status = 'אין חיבור לשרת, בדוק אינטרנט'; return render(); }
@@ -203,7 +206,7 @@ function applyView(v) {
     if (el) flyFrom = { rect: el.getBoundingClientRect(), card: v.top };
   }
   hands = { h: Array.from({ length: v.opp }, () => ({})), c: v.mine };
-  pileTop = v.top; color = v.color; turn = v.turn; taki = v.taki; over = v.over; pick = v.pick; msg = v.msg; penalty = v.penalty; viewer = 'c';
+  pileTop = v.top; color = v.color; turn = v.turn; taki = v.taki; over = v.over; pick = v.pick; msg = v.msg; penalty = v.penalty; pile = v.pile || []; viewer = 'c';
   net.ready = true;
   if (v.n && v.n !== lastN) /^\d$/.test(v.top.v) ? SFX.play() : SFX.special();
   lastN = v.n;
@@ -233,7 +236,7 @@ function reveal() { viewer = turn; cover = false; render(); }
 function newGame() {
   noAnim = true;
   if (guest()) return net.conn.send({ t: 'new' });
-  moveN = 0; winnerW = ''; penalty = 0;
+  moveN = 0; winnerW = ''; penalty = 0; pile = [];
   deck = fullDeck(); hands = { h: [], c: [] };
   draw('h', 8); draw('c', 8);
   do { pileTop = deck.pop(); if (!/^\d$/.test(pileTop.v)) { deck.unshift(pileTop); pileTop = null; } } while (!pileTop);
@@ -254,6 +257,8 @@ function play(w, i) {
     : document.querySelectorAll('.card.cpu')[hands.c.length >> 1];
   const c = hands[w].splice(i, 1)[0];
   if (src) flyFrom = { rect: src.getBoundingClientRect(), card: c };
+  pile.push({ c: pileTop.c, v: pileTop.v, r: Math.round(Math.random() * 70 - 35), x: Math.round(Math.random() * 24 - 12), y: Math.round(Math.random() * 24 - 12) });
+  pile = pile.slice(-20);
   pileTop = c;
   /^\d$/.test(c.v) ? SFX.play() : SFX.special();
   if (c.c !== 'w') color = c.c;
@@ -367,7 +372,8 @@ function render() {
     <div class="row">${hands[other].map(() => '<div class="card back cpu"></div>').join('')}</div>
     <div class="mid">
       <div class="pile" onclick="humanDraw()" title="משוך קלף"><div class="card back">משוך${penalty ? '<br>' + penalty : ''}</div></div>
-      <div class="card top" style="background:${bg(pileTop)};border-color:${COL[color]};border-width:6px">${SYM[pileTop.v] || pileTop.v}</div>
+      <div class="stack">${pile.map(c => `<div class="card under" style="background:${bg(c)};transform:translate(${c.x}px,${c.y}px) rotate(${c.r}deg)">${SYM[c.v] || c.v}</div>`).join('')}
+        <div class="card top" style="background:${bg(pileTop)};border-color:${COL[color]};border-width:6px">${SYM[pileTop.v] || pileTop.v}</div></div>
       <div style="text-align:center">צבע נוכחי<br><b style="color:${COL[color]}">${NAMES[color]}</b></div>
     </div>
     ${pick && turn === viewer ? `<div class="row pick">${Object.keys(COL).map(c =>
