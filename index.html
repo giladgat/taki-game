@@ -242,6 +242,7 @@ const controls = () => `<div class="row"><button onclick="newGame()">משחק ח
 function reveal() { viewer = turn; cover = false; render(); }
 
 function newGame() {
+  plays = 0;
   noAnim = true;
   if (guest()) return net.conn.send({ t: 'new' });
   moveN = 0; winnerW = ''; penalty = 0; pile = [];
@@ -430,7 +431,7 @@ function flyCard({ rect, card }) {
     { translate: `${dx * .3}px ${dy * .3 - 24}px`, scale: 1.12, rotate: '-6deg', offset: .65 },
     { translate: '0 0', scale: 1, rotate: '0deg' }
   ], { duration: 900, easing: 'cubic-bezier(.3,.7,.3,1)' })
-    .onfinish = () => { f.remove(); t.style.visibility = ''; ripple(r); };
+    .onfinish = () => { f.remove(); t.style.visibility = ''; if (++plays % 3 === 0) ripple(r); };
 }
 
 // When a card lands, slow waves spread out from the pile. Nothing else on the page moves.
@@ -453,7 +454,7 @@ function ripple(r) {
 }
 
 // Remaining hand cards slide to their new places; drawn cards slide in from the pile.
-let noAnim = false;
+let noAnim = false, plays = 0;   // the wave only appears on every third card played
 function captureHand() {
   const m = {};
   document.querySelectorAll('[data-k]').forEach(e => { m[e.dataset.k] = e.getBoundingClientRect(); });
