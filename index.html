@@ -437,17 +437,17 @@ function flyCard({ rect, card }) {
 function ripple(r) {
   if (window.matchMedia?.('(prefers-reduced-motion: reduce)')?.matches) return;
   const x = r.left + r.width / 2, y = r.top + r.height / 2;
-  for (let k = 0; k < 2; k++) {
+  for (let k = 0; k < 3; k++) {
     const w = document.createElement('div');
-    w.style.cssText = `position:fixed;z-index:1;pointer-events:none;border-radius:50%;border:2px solid #ffffff66;` +
+    w.style.cssText = `position:fixed;z-index:1;pointer-events:none;border-radius:50%;border:3px solid #ffffffcc;box-shadow:0 0 14px #ffffff88, inset 0 0 10px #ffffff55;` +
       `width:90px;height:90px;left:${x - 45}px;top:${y - 45}px`;
     document.body.appendChild(w);
-    w.animate([{ scale: .3, opacity: .9 }, { scale: 6, opacity: 0 }],
-      { duration: 1200, delay: k * 200, easing: 'ease-out', fill: 'backwards' }).onfinish = () => w.remove();
+    w.animate([{ scale: .2, opacity: 1 }, { scale: 7, opacity: 0 }],
+      { duration: 1400, delay: k * 160, easing: 'ease-out', fill: 'backwards' }).onfinish = () => w.remove();
   }
   try {
     document.body.animate([
-      { transform: 'scale(1)' }, { transform: 'scale(1.014)', offset: .3 }, { transform: 'scale(1)' }
+      { transform: 'scale(1)' }, { transform: 'scale(1.025)', offset: .3 }, { transform: 'scale(1)' }
     ], { duration: 800, easing: 'ease-out', pseudoElement: '::after' });
   } catch (e) {}
 }
