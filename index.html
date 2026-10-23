@@ -27,7 +27,7 @@
   #msg { font-size:20px; font-weight:600; min-height:28px; }
   .row { display:flex; gap:6px; flex-wrap:wrap; justify-content:center; max-width:900px; }
   .mid { display:flex; gap:clamp(12px,5vw,28px); align-items:center; justify-content:center; margin:6px 0; }
-  .card { width:clamp(46px,14.5vw,62px); aspect-ratio:62/90; flex:none; border-radius:10px; border:3px solid #fff; color:#fff; font-size:clamp(24px,8vw,34px);
+  .card { transition:transform .2s ease; width:clamp(46px,14.5vw,62px); aspect-ratio:62/90; flex:none; border-radius:10px; border:3px solid #fff; color:#fff; font-size:clamp(24px,8vw,34px);
           font-family:"Permanent Marker", Impact, "Marker Felt", cursive; letter-spacing:1px;
           -webkit-text-stroke:2px #111; paint-order:stroke fill; transform:rotate(-4deg);
           display:flex; align-items:center; justify-content:center;
@@ -183,6 +183,11 @@ function onData(d) {
 // Guest: the host sent the current state.
 function applyView(v) {
   const was = over;
+  if (!v.n) noAnim = true;
+  else if (hands && v.n !== lastN && !flyFrom) {
+    const el = document.querySelectorAll('.card.cpu')[hands.h.length >> 1];
+    if (el) flyFrom = { rect: el.getBoundingClientRect(), card: v.top };
+  }
   hands = { h: Array.from({ length: v.opp }, () => ({})), c: v.mine };
   pileTop = v.top; color = v.color; turn = v.turn; taki = v.taki; over = v.over; pick = v.pick; msg = v.msg; penalty = v.penalty; viewer = 'c';
   net.ready = true;
@@ -212,6 +217,7 @@ const controls = () => `<div class="row"><button onclick="newGame()">משחק ח
 function reveal() { viewer = turn; cover = false; render(); }
 
 function newGame() {
+  noAnim = true;
   if (guest()) return net.conn.send({ t: 'new' });
   moveN = 0; winnerW = ''; penalty = 0;
   deck = fullDeck(); hands = { h: [], c: [] };
@@ -224,8 +230,8 @@ function newGame() {
 function next() {
   render();
   if (over) return;
-  if (mode === '1' && turn === 'c') setTimeout(cpuTurn, 800);
-  if (mode === '2' && turn !== viewer && !cover) setTimeout(() => { if (!over && turn !== viewer) { cover = true; render(); } }, 900);
+  if (mode === '1' && turn === 'c') setTimeout(cpuTurn, 1300);
+  if (mode === '2' && turn !== viewer && !cover) setTimeout(() => { if (!over && turn !== viewer) { cover = true; render(); } }, 1300);
 }
 
 function play(w, i) {
@@ -299,7 +305,14 @@ function cpuTurn() {
 }
 
 function humanClick(i) {
-  if (guest()) { if (canAct() && canPlay(hands.c[i])) net.conn.send({ t: 'click', i }); return; }
+  if (guest()) {
+    if (canAct() && canPlay(hands.c[i])) {
+      const el = document.querySelector(`[data-h="${i}"]`);
+      if (el) flyFrom = { rect: el.getBoundingClientRect(), card: hands.c[i] };
+      net.conn.send({ t: 'click', i });
+    }
+    return;
+  }
   if (!canAct() || !canPlay(hands[viewer][i])) return;
   play(viewer, i);
 }
@@ -330,6 +343,7 @@ function render() {
     return;
   }
   if (mode === '3' && !net.ready) { app.innerHTML = lobby() + controls(); return; }
+  const prev = captureHand(), seen = {};
   const mine = canAct(), other = viewer === 'h' ? 'c' : 'h';
   app.innerHTML = `
     <div style="text-align:center">
@@ -345,10 +359,13 @@ function render() {
     ${pick && turn === viewer ? `<div class="row pick">${Object.keys(COL).map(c =>
         `<button style="background:${COL[c]}" onclick="setColor('${c}')" title="${NAMES[c]}"></button>`).join('')}</div>` : ''}
     ${taki && mine ? '<button onclick="closeTaki()">סגור טאקי</button>' : ''}
-    <div class="row">${hands[viewer].map((c, i) =>
-        face(c, mine && canPlay(c) ? 'ok' : '', `data-h="${i}" onclick="humanClick(${i})"`)).join('')}</div>
+    <div class="row">${hands[viewer].map((c, i) => {
+        const k = c.c + c.v, n = seen[k] = (seen[k] || 0) + 1;
+        return face(c, mine && canPlay(c) ? 'ok' : '', `data-h="${i}" data-k="${k}#${n}" onclick="humanClick(${i})"`);
+      }).join('')}</div>
     ${controls()}`;
   if (mode === '3' && net.role === 'host' && net.ready && net.conn.open) net.conn.send(view());
+  animateHand(prev);
   if (flyFrom) flyCard(flyFrom);
   flyFrom = null;
 }
@@ -375,13 +392,39 @@ function flyCard({ rect, card }) {
   const f = document.createElement('div');
   f.className = 'card';
   f.textContent = SYM[card.v] || card.v;
-  f.style.cssText = `position:fixed;z-index:9;pointer-events:none;transform-origin:0 0;left:${r.left}px;top:${r.top}px;` +
-    `width:${r.width}px;height:${r.height}px;background:${bg(card)};border-color:${COL[color]};border-width:6px;font-size:46px`;
+  f.style.cssText = `position:fixed;z-index:9;pointer-events:none;transition:none;left:${r.left}px;top:${r.top}px;` +
+    `width:${r.width}px;height:${r.height}px;background:${bg(card)};border-color:${COL[color]};border-width:6px;font-size:clamp(32px,11vw,46px)`;
   document.body.appendChild(f);
   t.style.visibility = 'hidden';
-  const move = `translate(${rect.left - r.left}px,${rect.top - r.top}px) scale(${rect.width / r.width})`;
-  f.animate([{ transform: move }, { transform: 'none' }], { duration: 450, easing: 'ease-out' })
+  const dx = rect.left + rect.width / 2 - (r.left + r.width / 2), dy = rect.top + rect.height / 2 - (r.top + r.height / 2);
+  f.animate([
+    { translate: `${dx}px ${dy}px`, scale: rect.width / r.width, rotate: '14deg' },
+    { translate: `${dx * .3}px ${dy * .3 - 24}px`, scale: 1.12, rotate: '-6deg', offset: .65 },
+    { translate: '0 0', scale: 1, rotate: '0deg' }
+  ], { duration: 900, easing: 'cubic-bezier(.3,.7,.3,1)' })
     .onfinish = () => { f.remove(); t.style.visibility = ''; };
+}
+
+// Remaining hand cards slide to their new places; drawn cards slide in from the pile.
+let noAnim = false;
+function captureHand() {
+  const m = {};
+  document.querySelectorAll('[data-k]').forEach(e => { m[e.dataset.k] = e.getBoundingClientRect(); });
+  return m;
+}
+function animateHand(prev) {
+  const skip = noAnim; noAnim = false;
+  if (skip || !Object.keys(prev).length) return;
+  const pile = document.querySelector('.pile .card').getBoundingClientRect();
+  document.querySelectorAll('[data-k]').forEach(e => {
+    const r = e.getBoundingClientRect(), o = prev[e.dataset.k];
+    if (o && Math.abs(o.left - r.left) < 1 && Math.abs(o.top - r.top) < 1) return;
+    const from = o || pile;
+    e.animate([
+      { translate: `${from.left - r.left}px ${from.top - r.top}px`, scale: o ? 1 : .5, opacity: o ? 1 : 0 },
+      { translate: '0 0', scale: 1, opacity: 1 }
+    ], { duration: o ? 600 : 750, easing: 'cubic-bezier(.3,.7,.3,1)' });
+  });
 }
 
 newGame();
