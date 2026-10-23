@@ -24,6 +24,8 @@
   :root { color-scheme:dark; }
   #app { display:flex; flex-direction:column; align-items:center; gap:14px; max-width:100%; }
   h1 { margin:0; font-size:28px; }
+  #wins { position:fixed; z-index:5; top:calc(env(safe-area-inset-top, 0px) + 24px); right:calc(env(safe-area-inset-right, 0px) + 26px);
+          padding:4px 12px; border:2px solid #fde047; border-radius:999px; background:#0009; font-size:16px; font-weight:700; direction:ltr; }
   #msg { font-size:20px; font-weight:600; min-height:28px; }
   .row { display:flex; gap:6px; flex-wrap:wrap; justify-content:center; max-width:900px; }
   .mid { display:flex; gap:clamp(12px,5vw,28px); align-items:center; justify-content:center; margin:6px 0; }
@@ -49,6 +51,7 @@
 <body>
 
   <h1>טאקי שאיתי יצר</h1>
+  <div id="wins" title="ניצחונות"></div>
   <div id="app"></div>
 
 <script src="https://unpkg.com/peerjs@1.5.4/dist/peerjs.min.js"></script>
@@ -130,6 +133,17 @@ const TL = () => mode !== '1' ? 'תור ' + PN(turn) : turn === 'h' ? 'התור 
 const canAct = () => !over && !pick && !cover && turn === viewer;
 function setMode(v) { netReset(); mode = v; try { localStorage.setItem('mode', v); } catch (e) {} newGame(); }
 
+// All-time win counter, kept on this device. Counts your wins against the computer and online;
+// a shared-phone game has no single player, so it isn't counted.
+let wins = 0;
+try { wins = +localStorage.getItem('wins') || 0; } catch (e) {}
+function showWins(bump) {
+  const el = document.getElementById('wins');
+  el.textContent = '🏆 ' + wins;
+  if (bump) el.animate?.([{ scale: 1 }, { scale: 1.5 }, { scale: 1 }], { duration: 700 });
+}
+function addWin() { wins++; try { localStorage.setItem('wins', wins); } catch (e) {} showWins(true); }
+
 // Mode 3 (two phones): the host runs the game; the guest sends its moves and receives its own view of the state.
 let net = {}, winnerW = '', moveN = 0, lastN = 0;
 const guest = () => mode === '3' && net.role === 'guest';
@@ -193,7 +207,7 @@ function applyView(v) {
   net.ready = true;
   if (v.n && v.n !== lastN) /^\d$/.test(v.top.v) ? SFX.play() : SFX.special();
   lastN = v.n;
-  if (v.over && !was) { confetti(); v.win === 'c' ? SFX.win() : SFX.lose(); }
+  if (v.over && !was) { if (v.win === 'c') addWin(); confetti(); v.win === 'c' ? SFX.win() : SFX.lose(); }
   render();
 }
 
@@ -244,7 +258,7 @@ function play(w, i) {
   /^\d$/.test(c.v) ? SFX.play() : SFX.special();
   if (c.c !== 'w') color = c.c;
   if (c.v === 'taki') taki = true;
-  if (!hands[w].length) { over = true; winnerW = w; msg = mode !== '1' ? '🎉 ' + PN(w) + ' ניצח!' : w === 'h' ? '🎉 ניצחת!' : '🤖 המחשב ניצח'; confetti(); mode === '2' || w === 'h' ? SFX.win() : SFX.lose(); return next(); }
+  if (!hands[w].length) { over = true; winnerW = w; if (mode === '1' && w === 'h' || mode === '3' && w === viewer) addWin(); msg = mode !== '1' ? '🎉 ' + PN(w) + ' ניצח!' : w === 'h' ? '🎉 ניצחת!' : '🤖 המחשב ניצח'; confetti(); mode === '2' || w === 'h' ? SFX.win() : SFX.lose(); return next(); }
   if (c.c === 'w') {
     if (w === viewer || mode === '3') { pick = true; msg = mode === '3' ? PN(w) + ' בוחר צבע' : 'בחר צבע'; return next(); }
     return setColor(level === '1' ? 'rygb'[Math.random() * 4 | 0] : mostCommon());
@@ -427,6 +441,7 @@ function animateHand(prev) {
   });
 }
 
+showWins();
 newGame();
 </script>
 
