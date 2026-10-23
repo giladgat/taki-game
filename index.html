@@ -430,7 +430,26 @@ function flyCard({ rect, card }) {
     { translate: `${dx * .3}px ${dy * .3 - 24}px`, scale: 1.12, rotate: '-6deg', offset: .65 },
     { translate: '0 0', scale: 1, rotate: '0deg' }
   ], { duration: 900, easing: 'cubic-bezier(.3,.7,.3,1)' })
-    .onfinish = () => { f.remove(); t.style.visibility = ''; };
+    .onfinish = () => { f.remove(); t.style.visibility = ''; ripple(r); };
+}
+
+// When a card lands, a small wave spreads from the pile and nudges the felt.
+function ripple(r) {
+  if (window.matchMedia?.('(prefers-reduced-motion: reduce)')?.matches) return;
+  const x = r.left + r.width / 2, y = r.top + r.height / 2;
+  for (let k = 0; k < 2; k++) {
+    const w = document.createElement('div');
+    w.style.cssText = `position:fixed;z-index:1;pointer-events:none;border-radius:50%;border:2px solid #ffffff66;` +
+      `width:90px;height:90px;left:${x - 45}px;top:${y - 45}px`;
+    document.body.appendChild(w);
+    w.animate([{ scale: .3, opacity: .9 }, { scale: 6, opacity: 0 }],
+      { duration: 1200, delay: k * 200, easing: 'ease-out', fill: 'backwards' }).onfinish = () => w.remove();
+  }
+  try {
+    document.body.animate([
+      { transform: 'scale(1)' }, { transform: 'scale(1.014)', offset: .3 }, { transform: 'scale(1)' }
+    ], { duration: 800, easing: 'ease-out', pseudoElement: '::after' });
+  } catch (e) {}
 }
 
 // Remaining hand cards slide to their new places; drawn cards slide in from the pile.
