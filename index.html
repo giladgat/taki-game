@@ -29,8 +29,8 @@
          box-shadow:inset 0 0 0 2px #000a, inset 0 8px 24px #000c, inset 0 -6px 16px #0008;
          outline:2px solid #ffffff2e; outline-offset:-24px; }
   :root { color-scheme:dark; }
-  #app { display:flex; flex-direction:column; align-items:center; gap:14px; max-width:100%; }
-  h1 { margin:0; font-size:28px; }
+  #app { position:relative; z-index:2; display:flex; flex-direction:column; align-items:center; gap:14px; max-width:100%; }
+  h1 { position:relative; z-index:2; margin:0; font-size:28px; }
   @media (max-width:520px) { h1 { margin-top:34px; } }  /* leave room for the win counter in the corner */
   #wins { position:absolute; z-index:5; top:calc(env(safe-area-inset-top, 0px) + 46px); right:calc(env(safe-area-inset-right, 0px) + 50px);
           padding:4px 12px; border:2px solid #fde047; border-radius:999px; background:#0009; font-size:16px; font-weight:700; direction:ltr; }
@@ -434,7 +434,7 @@ function flyCard({ rect, card }) {
     .onfinish = () => { f.remove(); t.style.visibility = ''; if (++plays % 3 === 0) ripple(r); };
 }
 
-// When a card lands, slow waves spread out from the pile. Nothing else on the page moves.
+// A wave travels under the felt: a ring of raised cloth (light edge, shadowed edge) that sits below the cards. Nothing else moves.
 function ripple(r) {
   if (window.matchMedia?.('(prefers-reduced-motion: reduce)')?.matches) return;
   const x = r.left + r.width / 2, y = r.top + r.height / 2;
@@ -445,10 +445,10 @@ function ripple(r) {
   let left = 1;
   for (let k = 0; k < 1; k++) {
     const w = document.createElement('div');
-    w.style.cssText = `position:absolute;border-radius:50%;border:2px solid #ffffffbb;box-shadow:0 0 14px #ffffff88, inset 0 0 10px #ffffff55;` +
-      `width:90px;height:90px;left:${x - 45}px;top:${y - 45}px`;
+    w.style.cssText = `position:absolute;border-radius:50%;width:90px;height:90px;left:${x - 45}px;top:${y - 45}px;` +
+      `background:radial-gradient(circle closest-side, transparent 46%, #ffffff40 56%, #ffffff12 61%, #00000055 69%, transparent 80%)`;
     layer.appendChild(w);
-    w.animate([{ scale: .2, opacity: .55 }, { scale: 15, opacity: 0 }],
+    w.animate([{ scale: .2, opacity: 1 }, { scale: 15, opacity: 0 }],
       { duration: 2800, delay: k * 380, easing: 'ease-out', fill: 'backwards' }).onfinish = () => { if (!--left) layer.remove(); };
   }
 }
