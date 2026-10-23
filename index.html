@@ -38,8 +38,9 @@
   .result { font-size:15px; font-weight:700; color:#fde047; }
   button.big { font-size:20px; padding:12px 28px; background:#f59e0b; color:#1b1206; font-weight:800; }
   button.big:hover { background:#fbbf24; }
-  #wins { position:absolute; z-index:5; top:calc(env(safe-area-inset-top, 0px) + 46px); right:calc(env(safe-area-inset-right, 0px) + 50px);
+  #wins, #streak { position:absolute; z-index:5; top:calc(env(safe-area-inset-top, 0px) + 46px); right:calc(env(safe-area-inset-right, 0px) + 50px);
           padding:4px 12px; border:2px solid #fde047; border-radius:999px; background:#0009; font-size:16px; font-weight:700; direction:ltr; }
+  #streak { right:auto; left:calc(env(safe-area-inset-left, 0px) + 50px); border-color:#fb923c; }
   #msg { font-size:20px; font-weight:600; min-height:28px; }
   .row { display:flex; gap:6px; flex-wrap:wrap; justify-content:center; max-width:900px; }
   .mid { display:flex; gap:clamp(12px,5vw,28px); align-items:center; justify-content:center; margin:6px 0; }
@@ -69,6 +70,7 @@
 
   <h1>טאקי שאיתי יצר</h1>
   <div id="wins" title="ניצחונות"></div>
+  <div id="streak" title="רצף ניצחונות"></div>
   <div id="app"></div>
 
 <script src="https://unpkg.com/peerjs@1.5.4/dist/peerjs.min.js"></script>
@@ -161,8 +163,10 @@ const unlock = id => !st.ach[id] && (st.ach[id] = 1);
 
 function showWins(bump) {
   const el = document.getElementById('wins');
-  el.textContent = '🏆 ' + st.wins + (st.streak > 1 ? '  🔥 ' + st.streak : '');
-  if (bump) el.animate?.([{ scale: 1 }, { scale: 1.5 }, { scale: 1 }], { duration: 700 });
+  const fire = document.getElementById('streak');
+  el.textContent = '🏆 ' + st.wins;
+  fire.textContent = '🔥 ' + st.streak;
+  if (bump) (st.streak ? fire : el).animate?.([{ scale: 1 }, { scale: 1.5 }, { scale: 1 }], { duration: 700 });
 }
 
 function toast(text) {
