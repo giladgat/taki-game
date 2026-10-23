@@ -453,20 +453,53 @@ function render() {
   flyFrom = null;
 }
 
+// Black-and-white paper confetti fired from both bottom corners, with air drag, sway and 3D flipping.
 function confetti() {
-  const colors = Object.values(COL).concat('#fff', '#f472b6');
-  for (let i = 0; i < 150; i++) {
-    const p = document.createElement('div'), size = 6 + Math.random() * 8;
-    p.style.cssText = `position:fixed;z-index:20;pointer-events:none;top:-20px;left:${Math.random() * 100}vw;` +
-      `width:${size}px;height:${size * 1.6}px;background:${colors[i % colors.length]}`;
-    document.body.appendChild(p);
-    const drift = (Math.random() - .5) * 300;
-    p.animate([
-      { transform: 'translate(0,0) rotate(0)', opacity: 1 },
-      { transform: `translate(${drift}px,${innerHeight + 40}px) rotate(${Math.random() * 1080}deg)`, opacity: 1 }
-    ], { duration: 2000 + Math.random() * 2500, delay: Math.random() * 600, easing: 'ease-in', fill: 'backwards' })
-      .onfinish = () => p.remove();
+  if (window.matchMedia?.('(prefers-reduced-motion: reduce)')?.matches) return;
+  const cv = document.createElement('canvas'), g = cv.getContext?.('2d');
+  if (!g) return;
+  const dpr = window.devicePixelRatio || 1, W = innerWidth, H = innerHeight;
+  cv.width = W * dpr; cv.height = H * dpr;
+  cv.style.cssText = 'position:fixed;inset:0;width:100%;height:100%;z-index:20;pointer-events:none';
+  document.body.appendChild(cv);
+  g.scale(dpr, dpr);
+  const ps = [];
+  const spawn = (x, y, ang, speed, delay) => {
+    const a = ang + (Math.random() - .5) * .5, v = speed * (.45 + Math.random() * .55), w = 6 + Math.random() * 8;
+    ps.push({ x, y, vx: Math.cos(a) * v, vy: Math.sin(a) * v, w, h: w * (1.3 + Math.random() * .9), rot: Math.random() * 6.28,
+      vr: (Math.random() - .5) * .3, f: Math.random() * 6.28, vf: .12 + Math.random() * .22, sway: Math.random() * 6.28,
+      dark: Math.random() < .5, delay });
+  };
+  const power = Math.min(40, Math.max(24, H / 20));
+  for (let i = 0; i < 90; i++) {
+    spawn(W * .04, H, -Math.PI * (.2 + Math.random() * .12), power, Math.random() * 120);      // left cannon, up and to the right
+    spawn(W * .96, H, -Math.PI * (.68 + Math.random() * .12), power, Math.random() * 120);     // right cannon, up and to the left
   }
+  for (let i = 0; i < 50; i++) spawn(Math.random() * W, -20, Math.PI / 2, 2, 700 + Math.random() * 900);   // a light shower after the blast
+  const t0 = performance.now(); let last = t0;
+  (function frame(now) {
+    const dt = Math.min(2, (now - last) / 16.7); last = now;
+    g.clearRect(0, 0, W, H);
+    let alive = 0;
+    for (const p of ps) {
+      if (now - t0 < p.delay) { alive++; continue; }
+      p.vx *= Math.pow(.93, dt);
+      p.vy = p.vy * Math.pow(.93, dt) + .2 * dt;
+      p.sway += .07 * dt; p.f += p.vf * dt; p.rot += p.vr * dt;
+      p.x += (p.vx + Math.sin(p.sway) * .9) * dt; p.y += p.vy * dt;
+      if (p.y > H + 30) continue;
+      alive++;
+      const flip = Math.cos(p.f);
+      g.save();
+      g.translate(p.x, p.y); g.rotate(p.rot); g.scale(1, flip);
+      g.fillStyle = p.dark ? (flip > 0 ? '#111' : '#3a3a3a') : (flip > 0 ? '#fff' : '#cfcfcf');
+      g.shadowColor = 'rgba(0,0,0,.4)'; g.shadowBlur = 3;
+      g.fillRect(-p.w / 2, -p.h / 2, p.w, p.h);
+      if (p.dark) { g.shadowBlur = 0; g.strokeStyle = 'rgba(255,255,255,.35)'; g.lineWidth = .6; g.strokeRect(-p.w / 2, -p.h / 2, p.w, p.h); }
+      g.restore();
+    }
+    if (alive && now - t0 < 9000) requestAnimationFrame(frame); else cv.remove();
+  })(t0);
 }
 
 // Slide the played card from its old position onto the discard pile.
