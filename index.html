@@ -1174,6 +1174,7 @@ function splashSound() {                               // the big splash: a burs
 
 // Win or loss effects: a whale for a win, and a liner dragged under by a giant octopus for a loss.
 function winFx(iWon) {
+  if (document.body.getAttribute?.('data-bg') !== 'beach') return;      // rainy beach only
   if (iWon) whaleBreach(); else loseFx();
 }
 
