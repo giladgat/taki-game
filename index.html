@@ -473,7 +473,7 @@ const controls = () => `<div class="row"><button class="gb red" onclick="newGame
         <option value="3" ${mode === '3' ? 'selected' : ''}>שני טלפונים</option></select><i class="arr">▾</i></span>
       ${mode === '1' ? `<span class="gb green"><select onchange="setLevel(this.value)" aria-label="רמת קושי">${[['1', 'קל'], ['2', 'בינוני'], ['3', 'קשה']].map(([v, t]) =>
         `<option value="${v}" ${v === level ? 'selected' : ''}>${t}</option>`).join('')}</select><i class="arr">▾</i></span>` : ''}
-      ${guest() ? '' : `<button class="gb ${pyr ? 'green' : 'blue'}" onclick="setPyr()">🔺 פירמידה${pyr ? ' ✓' : ''}</button>`}
+      ${guest() ? '' : `<button class="gb ${pyr ? 'green' : 'blue'}" onclick="setPyr()" aria-label="החלף בין טאקי רגיל לטאקי פירמידה">${pyr ? '🔺 טאקי פירמידה' : '🎴 טאקי רגיל'}</button>`}
       <button class="gb yellow" onclick="toggleMute()" aria-label="צלילים">${muted ? '🔇' : '🔊'}</button></div>`;
 function reveal() { viewer = turn; cover = false; render(); }
 
