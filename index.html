@@ -160,6 +160,10 @@
   @keyframes chestRays { 0% { opacity:0; transform:rotate(0) scale(.5); } 25% { opacity:.9; } 100% { opacity:0; transform:rotate(40deg) scale(1.2); } }
   @media (max-width:520px) { #chest { scale:.6; right:3vw; bottom:12vh; } }
   @media (prefers-reduced-motion: reduce) { #chest .lid { transition:none; } #chest.shine .glow, #chest.shine .rays { animation:none; opacity:.5; } }
+  .who { text-align:center; font-weight:bold; font-size:16px; color:#fff; opacity:.75; margin:2px 0; text-shadow:1px 1px 2px #000; transition:color .3s, text-shadow .3s, opacity .3s; }
+  .who.on { opacity:1; color:#ffe14a; text-shadow:0 0 6px #ffd500, 0 0 14px #ffc400, 0 0 26px #ffb000; animation:whoGlow 1.6s ease-in-out infinite alternate; }
+  @keyframes whoGlow { from { text-shadow:0 0 5px #ffd500, 0 0 12px #ffc400; } to { text-shadow:0 0 9px #ffe14a, 0 0 22px #ffc400, 0 0 36px #ffb000; } }
+  @media (prefers-reduced-motion: reduce) { .who.on { animation:none; } }
   :root { color-scheme:dark; }
   #app { position:relative; z-index:2; display:flex; flex-direction:column; align-items:center; gap:14px; max-width:100%; }
   h1 { position:relative; z-index:2; margin:0; font-size:28px; }
@@ -599,6 +603,8 @@ const inner = c => {
 const face = (c, extra = '', click = '') =>
   `<div class="card ${extra}" style="${cv(c)}" ${click}>${inner(c)}</div>`;
 
+// Name tag for a row of cards; the name of the player whose turn it is glows yellow.
+const who = (p, name) => `<div class="who${!over && turn === p ? ' on' : ''}">${name}</div>`;
 function render() {
   const app = document.getElementById('app');
   if (cover) {
@@ -617,6 +623,7 @@ function render() {
       ${over ? '<button class="gb yellow big" onclick="newGame()">עוד משחק! ▶</button>' : ''}
       <small>${mode !== '1' ? 'קלפים ל' + PN(other) : 'קלפים למחשב'}: ${hands[other].length}</small>${mode === '3' ? `<br><small>אתה ${PN(viewer)}</small>` : ''}
     </div>
+    ${who(other, mode === '1' ? 'המחשב' : PN(other))}
     <div class="row">${hands[other].map(() => '<div class="card back cpu"></div>').join('')}</div>
     <div class="mid">
       <div class="pile" onclick="humanDraw()" title="משוך קלף"><div class="card back">משוך${penalty ? '<br>' + penalty : ''}</div></div>
@@ -631,6 +638,7 @@ function render() {
         const k = c.c + c.v, n = seen[k] = (seen[k] || 0) + 1;
         return face(c, mine && canPlay(c) ? 'ok' : '', `data-h="${i}" data-k="${k}#${n}" onclick="humanClick(${i})"`);
       }).join('')}</div>
+    ${who(viewer, PN(viewer))}
     ${controls()}`;
   if (mode === '3' && net.role === 'host' && net.ready && net.conn.open) net.conn.send(view());
   animateHand(prev);
