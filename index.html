@@ -125,6 +125,14 @@
   #whale-foam i { position:absolute; left:6%; right:6%; top:6px; height:22px; border:2px solid #ffffffaa; border-radius:50%; opacity:0; animation:ring 2.4s ease-out infinite; }
   #whale-foam i:nth-child(2) { animation-delay:.8s; } #whale-foam i:nth-child(3) { animation-delay:1.6s; }
   @keyframes ring { 0% { transform:scale(.7, .5); opacity:.8; } 100% { transform:scale(1.25, 1.1); opacity:0; } }
+  /* Beach only: the cards are a little darker (dim, wet light) with a small palm in a corner, and the buttons are duller. */
+  .card .palm { display:none; }
+  body[data-bg="beach"] .card .palm { display:block; position:absolute; z-index:1; top:6%; right:9%; width:26%; aspect-ratio:1; background:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Cg stroke='%23fff' stroke-width='1.6' stroke-linejoin='round' stroke-linecap='round' paint-order='stroke'%3E%3Cpath d='M17 30C17 24 16 19 18 13' fill='none' stroke='%23fff' stroke-width='4.6'/%3E%3Cpath d='M17 30C17 24 16 19 18 13' fill='none' stroke='%236b4423' stroke-width='2.4'/%3E%3Cg fill='%2314532d'%3E%3Cpath d='M18 12C14 6 7 6 3 10C8 9 13 10 18 12Z'/%3E%3Cpath d='M18 12C22 6 29 6 30 12C25 9 21 10 18 12Z'/%3E%3Cpath d='M18 12C13 11 9 14 8 19C12 15 15 14 18 12Z'/%3E%3Cpath d='M18 12C23 11 27 14 27 19C23 15 20 14 18 12Z'/%3E%3Cpath d='M18 12C16 7 16 4 18 2C20 5 20 8 18 12Z'/%3E%3C/g%3E%3Ccircle cx='16.4' cy='13.6' r='1.7' fill='%235a3a1d' stroke-width='.8'/%3E%3Ccircle cx='19.6' cy='13.8' r='1.7' fill='%235a3a1d' stroke-width='.8'/%3E%3C/g%3E%3C/svg%3E") center / contain no-repeat;
+         filter:drop-shadow(0 1px 1px #0008); }
+  body[data-bg="beach"] .card:not(.back)::after { background:linear-gradient(115deg, #ffffff55 0%, #ffffff00 42%), linear-gradient(#0b1c2e47, #0b1c2e47); }
+  body[data-bg="beach"] .gb { filter:saturate(.55) brightness(.93); }
+  body[data-bg="beach"] .gb::after { opacity:.35; }
+  body[data-bg="beach"] .gb { text-shadow:1px 1px 0 #111; }
   :root { color-scheme:dark; }
   #app { position:relative; z-index:2; display:flex; flex-direction:column; align-items:center; gap:14px; max-width:100%; }
   h1 { position:relative; z-index:2; margin:0; font-size:28px; }
@@ -556,7 +564,7 @@ function humanDraw() {
 const cv = c => c.c === 'w' ? `--c:#1f2937;--panel:${RAINBOW}` : `--c:${COL[c.c]}`;
 const inner = c => {
   const t = SYM[c.v] || c.v, ix = c.v === 'taki' ? 'ט' : t;
-  return `<i class="ix">${ix}</i><i class="ix b">${ix}</i><span class="face"><b${t.length > 2 ? ' class="long"' : ''}>${t}</b></span>`;
+  return `<i class="ix">${ix}</i><i class="ix b">${ix}</i><i class="palm"></i><span class="face"><b${t.length > 2 ? ' class="long"' : ''}>${t}</b></span>`;
 };
 const face = (c, extra = '', click = '') =>
   `<div class="card ${extra}" style="${cv(c)}" ${click}>${inner(c)}</div>`;
@@ -671,6 +679,7 @@ function flyCard({ rect, card }) {
   f.style.cssText = `position:fixed;z-index:9;pointer-events:none;transition:none;left:${r.left}px;top:${r.top}px;` +
     `width:${r.width}px;height:${r.height}px;${cv(card)};box-shadow:0 0 0 4px ${COL[color]}, 0 10px 20px #000a;font-size:clamp(42px,14vw,58px)`;
   document.body.appendChild(f);
+  waterTrail(f);
   t.style.visibility = 'hidden';
   const dx = rect.left + rect.width / 2 - (r.left + r.width / 2), dy = rect.top + rect.height / 2 - (r.top + r.height / 2);
   f.animate([
@@ -679,6 +688,54 @@ function flyCard({ rect, card }) {
     { translate: '0 0', scale: 1, rotate: '0deg' }
   ], { duration: 900, easing: 'cubic-bezier(.3,.7,.3,1)' })
     .onfinish = () => { f.remove(); t.style.visibility = ''; if (++plays % 3 === 0) ripple(r); };
+}
+
+// Beach only: a card that moves leaves a wet trail of water behind it, plus droplets shaken off the card.
+function waterTrail(card) {
+  if (document.body.getAttribute?.('data-bg') !== 'beach' || window.matchMedia?.('(prefers-reduced-motion: reduce)')?.matches) return;
+  const cv = document.createElement('canvas'), g = cv.getContext?.('2d');
+  if (!g) return;
+  const dpr = window.devicePixelRatio || 1, W = innerWidth, H = innerHeight;
+  cv.width = W * dpr; cv.height = H * dpr;
+  cv.style.cssText = 'position:fixed;inset:0;width:100%;height:100%;z-index:8;pointer-events:none';
+  document.body.appendChild(cv);
+  g.scale(dpr, dpr);
+  const trail = [], drops = [];
+  let last = performance.now(), prev = null;
+  (function frame(now) {
+    const dt = Math.min(2, (now - last) / 16.7); last = now;
+    g.clearRect(0, 0, W, H);
+    if (card.isConnected) {
+      const r = card.getBoundingClientRect(), cx = r.left + r.width / 2, cy = r.top + r.height / 2;
+      if (prev) {
+        const dx = cx - prev.x, dy = cy - prev.y, speed = Math.hypot(dx, dy);
+        if (speed > .5) {
+          trail.push({ x: cx, y: cy, w: r.width, h: r.height, a: .34, rot: Math.atan2(dy, dx) });
+          for (let i = 0; i < 3; i++) {                                  // droplets shaken off the card
+            drops.push({ x: cx + (Math.random() - .5) * r.width, y: cy + (Math.random() - .5) * r.height,
+              vx: -dx * .06 + (Math.random() - .5) * 2, vy: -dy * .06 + Math.random() * 1.5, r: .8 + Math.random() * 2.2, a: .9 });
+          }
+        }
+      }
+      prev = { x: cx, y: cy };
+    }
+    for (let i = trail.length - 1; i >= 0; i--) {               // the wet smear: soft translucent patches that fade away
+      const t = trail[i];
+      t.a -= .012 * dt;
+      if (t.a <= 0) { trail.splice(i, 1); continue; }
+      const gr = g.createRadialGradient(t.x, t.y, 0, t.x, t.y, t.w * .62);
+      gr.addColorStop(0, `rgba(190,226,245,${t.a})`); gr.addColorStop(1, 'rgba(190,226,245,0)');
+      g.fillStyle = gr; g.beginPath(); g.ellipse(t.x, t.y, t.w * .62, t.h * .5, t.rot, 0, 6.283); g.fill();
+    }
+    for (let i = drops.length - 1; i >= 0; i--) {
+      const d = drops[i];
+      d.vy += .25 * dt; d.x += d.vx * dt; d.y += d.vy * dt; d.a -= .02 * dt;
+      if (d.a <= 0) { drops.splice(i, 1); continue; }
+      g.fillStyle = `rgba(214,238,250,${d.a})`; g.beginPath(); g.arc(d.x, d.y, d.r, 0, 6.283); g.fill();
+      g.fillStyle = `rgba(255,255,255,${d.a})`; g.beginPath(); g.arc(d.x - d.r * .3, d.y - d.r * .3, d.r * .35, 0, 6.283); g.fill();
+    }
+    if (card.isConnected || trail.length || drops.length) requestAnimationFrame(frame); else cv.remove();
+  })(last);
 }
 
 // A wave travels under the felt: a ring of raised cloth (light edge, shadowed edge) that sits below the cards. Nothing else moves.
