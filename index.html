@@ -144,7 +144,7 @@
   #boat-flash { position:fixed; inset:0; z-index:18; pointer-events:none; background:#fff3d0; opacity:0; animation:boatFlash .45s ease-out forwards; }
   @keyframes boatFlash { 0% { opacity:.55; } 100% { opacity:0; } }
   /* Treasure chest on the beach: every 3 times a TAKI is closed (both players share the count) the lid comes down a notch; at 9 it is shut, gives off a little golden light and stays shut until the game ends, when it opens and gold spills out. */
-  #chest { position:fixed; z-index:0; display:none; right:2vw; bottom:3vh; width:160px; height:130px; pointer-events:none; transform-origin:100% 100%; scale:.72; --lid:-72deg; --open:1; }
+  #chest { position:fixed; z-index:4; display:none; right:2vw; bottom:9vh; width:160px; height:130px; pointer-events:none; transform-origin:100% 100%; scale:.72; --lid:-72deg; --open:1; }
   body[data-bg="beach"] #chest { display:block; }
   #chest i { position:absolute; inset:0; background-repeat:no-repeat; background-size:100% 100%; }
   #chest .inner { background:radial-gradient(ellipse 60px 34px at 50% 46%, #ffd45a 0%, #ffd45a00 100%); opacity:calc(var(--open) * .85); }
@@ -158,7 +158,7 @@
   #chest.shine .rays { animation:chestRays 2.6s ease-out forwards; }
   @keyframes chestGlow { 0% { opacity:0; transform:scale(.4); } 25% { opacity:1; transform:scale(1); } 100% { opacity:0; transform:scale(1.35); } }
   @keyframes chestRays { 0% { opacity:0; transform:rotate(0) scale(.5); } 25% { opacity:.9; } 100% { opacity:0; transform:rotate(40deg) scale(1.2); } }
-  @media (max-width:520px) { #chest { scale:.58; right:3vw; bottom:5vh; } }
+  @media (max-width:520px) { #chest { scale:.6; right:3vw; bottom:12vh; } }
   @media (prefers-reduced-motion: reduce) { #chest .lid { transition:none; } #chest.shine .glow, #chest.shine .rays { animation:none; opacity:.5; } }
   :root { color-scheme:dark; }
   #app { position:relative; z-index:2; display:flex; flex-direction:column; align-items:center; gap:14px; max-width:100%; }
