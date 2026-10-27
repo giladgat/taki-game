@@ -397,7 +397,7 @@ function netReset() {
 }
 netReset();
 function lost() { netReset(); net.status = 'החיבור נותק'; render(); }
-const view = () => ({ mine: hands.c, opp: hands.h.length, top: pileTop, color, turn, taki, over, pick, msg, n: moveN, win: winnerW, penalty, pile, chest: chestN });
+const view = () => ({ mine: hands.c, opp: hands.h.length, top: pileTop, color, turn, taki, over, pick, msg, n: moveN, win: winnerW, penalty, pile, chest: chestN, pyr, pn: { h: pyrN.c, c: pyrN.h } });
 
 function hostGame() {
   if (typeof Peer === 'undefined') { net.status = 'אין חיבור לשרת, בדוק אינטרנט'; return render(); }
@@ -448,6 +448,7 @@ function applyView(v) {
   }
   hands = { h: Array.from({ length: v.opp }, () => ({})), c: v.mine };
   pileTop = v.top; color = v.color; turn = v.turn; taki = v.taki; over = v.over; pick = v.pick; msg = v.msg; penalty = v.penalty; game.maxPen = v.n ? Math.max(game.maxPen, v.penalty) : 0; pile = v.pile || []; viewer = 'c';
+  if (v.pyr !== undefined) { pyr = v.pyr; pyrN = v.pn || pyrN; }
   if (v.chest !== undefined && v.chest !== chestN) { chestN = v.chest; chestUpdate(!v.over); }
   net.ready = true;
   if (v.n && v.n !== lastN) /^\d$/.test(v.top.v) ? SFX.play() : SFX.special();
@@ -472,6 +473,7 @@ const controls = () => `<div class="row"><button class="gb red" onclick="newGame
         <option value="3" ${mode === '3' ? 'selected' : ''}>שני טלפונים</option></select><i class="arr">▾</i></span>
       ${mode === '1' ? `<span class="gb green"><select onchange="setLevel(this.value)" aria-label="רמת קושי">${[['1', 'קל'], ['2', 'בינוני'], ['3', 'קשה']].map(([v, t]) =>
         `<option value="${v}" ${v === level ? 'selected' : ''}>${t}</option>`).join('')}</select><i class="arr">▾</i></span>` : ''}
+      ${guest() ? '' : `<button class="gb ${pyr ? 'green' : 'blue'}" onclick="setPyr()">🔺 פירמידה${pyr ? ' ✓' : ''}</button>`}
       <button class="gb yellow" onclick="toggleMute()" aria-label="צלילים">${muted ? '🔇' : '🔊'}</button></div>`;
 function reveal() { viewer = turn; cover = false; render(); }
 
@@ -481,6 +483,7 @@ function newGame() {
   if (guest()) return net.conn.send({ t: 'new' });
   moveN = 0; winnerW = ''; penalty = 0; pile = []; chestN = 0; game = { chain: 0, maxPen: 0 }; result = null;
   deck = fullDeck(); hands = { h: [], c: [] };
+  pyrN = { h: 8, c: 8 };
   draw('h', 8); draw('c', 8);
   do { pileTop = deck.pop(); if (!/^\d$/.test(pileTop.v)) { deck.unshift(pileTop); pileTop = null; } } while (!pileTop);
   color = pileTop.c; turn = 'h'; taki = false; over = false; pick = false; cover = false; viewer = 'h'; msg = TL();
@@ -508,6 +511,7 @@ function play(w, i) {
   if (c.c !== 'w') color = c.c;
   if (c.v === 'taki') taki = true;
   if (taki && w === viewer && mode !== '2' && ++game.chain >= 5 && unlock('chain')) toast('🏅 הישג חדש: שרשרת טאקי של 5 קלפים'), save();
+  if (!hands[w].length && pyr && pyrN[w] > 1) { draw(w, --pyrN[w]); toast('🔺 ' + (mode === '1' ? (w === 'h' ? 'סיימת' : 'המחשב סיים') : PN(w) + ' סיים') + ' — עכשיו ' + pyrN[w] + ' קלפים'); SFX.win(); }
   if (!hands[w].length) { over = true; winnerW = w; chestEnd(); if (mode === '1' || mode === '3') record(w === viewer, hands[w === 'h' ? 'c' : 'h'].length); msg = mode !== '1' ? '🎉 ' + PN(w) + ' ניצח!' : w === 'h' ? '🎉 ניצחת!' : '🤖 המחשב ניצח'; confetti(); winFx(mode === '2' || w === viewer); mode === '2' || w === 'h' ? SFX.win() : SFX.lose(); return next(); }
   if (c.c === 'w') {
     if (w === viewer || mode === '3') { pick = true; msg = mode === '3' ? PN(w) + ' בוחר צבע' : 'בחר צבע'; return next(); }
@@ -541,6 +545,10 @@ function mostCommon() {
 // Difficulty: 1 = easy, 2 = medium, 3 = hard.
 let level = '2';
 try { level = localStorage.getItem('level') || '2'; } catch (e) {}
+// Pyramid mode: whoever empties their hand gets a fresh hand one card smaller (8, 7, ... 1); emptying the 1-card hand wins.
+let pyr = false, pyrN = { h: 8, c: 8 };
+try { pyr = localStorage.getItem('pyr') === '1'; } catch (e) {}
+function setPyr() { pyr = !pyr; try { localStorage.setItem('pyr', pyr ? '1' : '0'); } catch (e) {} newGame(); }
 function setLevel(v) { level = v; try { localStorage.setItem('level', v); } catch (e) {} }
 
 function cpuTurn() {
@@ -604,7 +612,7 @@ const face = (c, extra = '', click = '') =>
   `<div class="card ${extra}" style="${cv(c)}" ${click}>${inner(c)}</div>`;
 
 // Name tag for a row of cards; the name of the player whose turn it is glows yellow.
-const who = (p, name) => `<div class="who${!over && turn === p ? ' on' : ''}">${name}</div>`;
+const who = (p, name) => `<div class="who${!over && turn === p ? ' on' : ''}">${name}${pyr ? ' · ' + pyrN[p] : ''}</div>`;
 function render() {
   const app = document.getElementById('app');
   if (cover) {
