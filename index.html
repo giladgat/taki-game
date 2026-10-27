@@ -314,7 +314,8 @@ const controls = () => `<div class="row"><button class="gb red" onclick="newGame
         <option value="3" ${mode === '3' ? 'selected' : ''}>שני טלפונים</option></select><i class="arr">▾</i></span>
       ${mode === '1' ? `<span class="gb green"><select onchange="setLevel(this.value)" aria-label="רמת קושי">${[['1', 'קל'], ['2', 'בינוני'], ['3', 'קשה']].map(([v, t]) =>
         `<option value="${v}" ${v === level ? 'selected' : ''}>${t}</option>`).join('')}</select><i class="arr">▾</i></span>` : ''}
-      <button class="gb yellow" onclick="toggleMute()" aria-label="צלילים">${muted ? '🔇' : '🔊'}</button></div>`;
+      <button class="gb yellow" onclick="toggleMute()" aria-label="צלילים">${muted ? '🔇' : '🔊'}</button>
+      <button class="gb red" onclick="nextBg()" aria-label="החלף רקע">🎨</button></div>`;
 function reveal() { viewer = turn; cover = false; render(); }
 
 function newGame() {
@@ -604,6 +605,19 @@ function animateHand(prev) {
     ], { duration: o ? 600 : 750, easing: 'cubic-bezier(.3,.7,.3,1)' });
   });
 }
+
+// Background switcher. Only the current table exists for now; to add one, append an entry here and style it as body[data-bg="id"].
+const BACKGROUNDS = [{ id: 'poker', name: 'שולחן פוקר' }];
+let bgIdx = 0;
+try { bgIdx = Math.max(0, BACKGROUNDS.findIndex(b => b.id === localStorage.getItem('bg'))); } catch (e) {}
+function applyBg() { document.body.setAttribute?.('data-bg', BACKGROUNDS[bgIdx].id); }
+function nextBg() {
+  bgIdx = (bgIdx + 1) % BACKGROUNDS.length;
+  try { localStorage.setItem('bg', BACKGROUNDS[bgIdx].id); } catch (e) {}
+  applyBg();
+  toast(`רקע: ${BACKGROUNDS[bgIdx].name} (${bgIdx + 1}/${BACKGROUNDS.length})`);
+}
+applyBg();
 
 // On phones held upright, the page is laid out about 12% wider than the screen, so the whole game is seen a bit from afar.
 function fitPhone() {
