@@ -18,7 +18,7 @@
          background:radial-gradient(ellipse at center, #2a1a12 0%, #120a06 100%);
          font-family:system-ui,"Segoe UI",Arial,sans-serif;
          display:flex; flex-direction:column; align-items:center; gap:14px; direction:rtl; touch-action:manipulation;
-         -webkit-tap-highlight-color:transparent; padding-block:46px;
+         -webkit-tap-highlight-color:transparent; padding-block:46px 100px;
          padding-left:max(36px, env(safe-area-inset-left, 0px)); padding-right:max(36px, env(safe-area-inset-right, 0px)); }
   body::before { content:""; position:absolute; z-index:-1; pointer-events:none; inset:10px; border-radius:64px;
          background:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='220' height='220'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='.85' numOctaves='3' stitchTiles='stitch'/%3E%3CfeColorMatrix values='0 0 0 0 0  0 0 0 0 0  0 0 0 0 0  0 0 0 1.2 -.3'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E"), url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='500' height='500'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='.035' numOctaves='4' stitchTiles='stitch'/%3E%3CfeColorMatrix values='0 0 0 0 0  0 0 0 0 0  0 0 0 0 0  0 0 0 1.4 -.55'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E"), linear-gradient(135deg, #5a3a27 0%, #2e1c11 45%, #4a2f20 100%);
@@ -32,6 +32,8 @@
   #app { position:relative; z-index:2; display:flex; flex-direction:column; align-items:center; gap:14px; max-width:100%; }
   h1 { position:relative; z-index:2; margin:0; font-size:28px; }
   @media (max-width:520px) { h1 { margin-top:34px; } }  /* leave room for the win counter in the corner */
+  #bgbtn { position:absolute; z-index:5; left:calc(env(safe-area-inset-left, 0px) + 46px); bottom:calc(env(safe-area-inset-bottom, 0px) + 46px);
+           font-size:26px; padding:10px 18px; }
   .xp { display:flex; gap:8px; align-items:center; justify-content:center; font-size:13px; font-weight:700; }
   .xp span { width:120px; height:8px; border-radius:99px; background:#0007; overflow:hidden; display:inline-block; }
   .xp b { display:block; height:100%; background:linear-gradient(90deg, #fde047, #f59e0b); }
@@ -97,6 +99,7 @@
   <h1>טאקי שאיתי יצר</h1>
   <div id="wins" title="ניצחונות"></div>
   <div id="streak" title="רצף ניצחונות"></div>
+  <button id="bgbtn" class="gb red" onclick="nextBg()" aria-label="החלף רקע">🎨</button>
   <div id="app"></div>
 
 <script src="https://unpkg.com/peerjs@1.5.4/dist/peerjs.min.js"></script>
@@ -314,8 +317,7 @@ const controls = () => `<div class="row"><button class="gb red" onclick="newGame
         <option value="3" ${mode === '3' ? 'selected' : ''}>שני טלפונים</option></select><i class="arr">▾</i></span>
       ${mode === '1' ? `<span class="gb green"><select onchange="setLevel(this.value)" aria-label="רמת קושי">${[['1', 'קל'], ['2', 'בינוני'], ['3', 'קשה']].map(([v, t]) =>
         `<option value="${v}" ${v === level ? 'selected' : ''}>${t}</option>`).join('')}</select><i class="arr">▾</i></span>` : ''}
-      <button class="gb yellow" onclick="toggleMute()" aria-label="צלילים">${muted ? '🔇' : '🔊'}</button>
-      <button class="gb red" onclick="nextBg()" aria-label="החלף רקע">🎨</button></div>`;
+      <button class="gb yellow" onclick="toggleMute()" aria-label="צלילים">${muted ? '🔇' : '🔊'}</button></div>`;
 function reveal() { viewer = turn; cover = false; render(); }
 
 function newGame() {
