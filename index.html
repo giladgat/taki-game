@@ -739,10 +739,10 @@ function syncRain() {
     src.connect(body); body.connect(gBody); gBody.connect(master);
     master.connect(AC.destination);
     const lfo = AC.createOscillator(), lg = AC.createGain();     // a very slow swell, like gusts of rain
-    lfo.frequency.value = .11; lg.gain.value = .09;
+    lfo.frequency.value = .11; lg.gain.value = .06;
     lfo.connect(lg); lg.connect(master.gain);
     src.start(); lfo.start();
-    master.gain.setTargetAtTime(.55, AC.currentTime, 1.5);        // fade in slowly to about -27 dBFS: calm and soft
+    master.gain.setTargetAtTime(.38, AC.currentTime, 1.5);        // fade in slowly to about -30 dBFS: calm and soft
     const drops = AC.createBuffer(1, Math.floor(AC.sampleRate * .03), AC.sampleRate);
     const dd = drops.getChannelData(0);
     for (let i = 0; i < dd.length; i++) dd[i] = (Math.random() * 2 - 1) * (1 - i / dd.length);
@@ -751,7 +751,7 @@ function syncRain() {
       if (rain !== r) return;
       const o = AC.createBufferSource(), f = AC.createBiquadFilter(), g = AC.createGain();
       o.buffer = drops; f.type = 'bandpass'; f.frequency.value = 1800 + Math.random() * 3400; f.Q.value = 3;
-      g.gain.value = .1 + Math.random() * .14;
+      g.gain.value = .07 + Math.random() * .1;
       o.connect(f); f.connect(g); g.connect(master); o.start();
       r.timer = setTimeout(drop, 120 + Math.random() * 380);
     })();
