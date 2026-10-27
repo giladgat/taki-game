@@ -134,6 +134,15 @@
   body[data-bg="beach"] .gb::after { opacity:.6; }
   body[data-bg="beach"] .card .ix.b { display:none; }          /* the palm takes the bottom-right corner */
   body[data-bg="beach"] .gb { text-shadow:1px 1px 0 #111; }
+  /* On the rainy beach, losing ends with a boat on the water that is hit by a missile and sinks. */
+  #boat { position:fixed; z-index:16; overflow:hidden; pointer-events:none; animation:boatSail 1.4s ease-out both; }
+  #boat .art { position:absolute; left:0; top:0; width:100%; height:130%; background:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 240 130'%3E%3Cdefs%3E%3ClinearGradient id='hl' x1='0' y1='0' x2='0' y2='1'%3E%3Cstop offset='0' stop-color='%2334557a'/%3E%3Cstop offset='.55' stop-color='%231f3a58'/%3E%3Cstop offset='1' stop-color='%2314283d'/%3E%3C/linearGradient%3E%3ClinearGradient id='cb' x1='0' y1='0' x2='1' y2='0'%3E%3Cstop offset='0' stop-color='%23f7fafc'/%3E%3Cstop offset='1' stop-color='%23b9c3cb'/%3E%3C/linearGradient%3E%3CclipPath id='hc'%3E%3Cpath d='M10 54L34 60L228 60L224 84C220 98 210 108 196 110L76 110C46 110 24 86 10 54Z'/%3E%3C/clipPath%3E%3C/defs%3E%3Cpath d='M10 54L34 60L228 60L224 84C220 98 210 108 196 110L76 110C46 110 24 86 10 54Z' fill='url(%23hl)' stroke='%230c1722' stroke-width='1.4'/%3E%3Cg clip-path='url(%23hc)'%3E%3Crect x='0' y='62' width='240' height='5' fill='%23e9eef2'/%3E%3Crect x='0' y='92' width='240' height='24' fill='%237c1d1d'/%3E%3Cpath d='M152.12230508014636 73.4178698926073l-0.4 21' stroke='%237a4a2a' stroke-width='1.8' opacity='0.42'/%3E%3Cpath d='M183.1348418018254 75.4245028377705l-0.6 21' stroke='%237a4a2a' stroke-width='2.0' opacity='0.49'/%3E%3Cpath d='M173.18174345318752 75.22324996665417l0.8 12' stroke='%237a4a2a' stroke-width='1.5' opacity='0.29'/%3E%3Cpath d='M45.220941091050655 70.65622654378106l-0.7 9' stroke='%237a4a2a' stroke-width='1.4' opacity='0.40'/%3E%3Cpath d='M209.80420905969646 72.48974553136924l-1.0 17' stroke='%237a4a2a' stroke-width='1.5' opacity='0.33'/%3E%3Cpath d='M202.1620885151121 67.13205964653145l0.6 15' stroke='%237a4a2a' stroke-width='1.4' opacity='0.37'/%3E%3Cpath d='M124.43242860078948 68.4657283261983l0.4 9' stroke='%237a4a2a' stroke-width='2.4' opacity='0.26'/%3E%3Cpath d='M137.87695466246748 71.73941187928101l0.5 20' stroke='%237a4a2a' stroke-width='1.0' opacity='0.45'/%3E%3Cpath d='M42.3605541260024 68.16729800463848l-0.3 16' stroke='%237a4a2a' stroke-width='1.0' opacity='0.26'/%3E%3Cpath d='M90.30682588199986 75.16345371808552l-0.6 21' stroke='%237a4a2a' stroke-width='1.3' opacity='0.44'/%3E%3Cpath d='M177.8305812932455 67.59604212358039l0.9 21' stroke='%237a4a2a' stroke-width='1.5' opacity='0.34'/%3E%3Cpath d='M183.4864584576168 67.38767418398903l0.0 19' stroke='%237a4a2a' stroke-width='1.2' opacity='0.44'/%3E%3Cpath d='M151.14145368390098 67.2669923255027l0.6 20' stroke='%237a4a2a' stroke-width='1.1' opacity='0.49'/%3E%3Cpath d='M40.31947519645624 74.71404744724282l-0.8 13' stroke='%237a4a2a' stroke-width='1.9' opacity='0.48'/%3E%3Cpath d='M77.70214884912122 68.15481169224732l-0.3 21' stroke='%237a4a2a' stroke-width='1.8' opacity='0.33'/%3E%3Cpath d='M216.83579958866656 74.72407765436802l-0.4 10' stroke='%237a4a2a' stroke-width='1.1' opacity='0.29'/%3E%3Cpath d='M157 70v13' stroke='%23e9f3fa' stroke-width='.9' opacity='.3'/%3E%3Cpath d='M39 70v19' stroke='%23e9f3fa' stroke-width='.9' opacity='.3'/%3E%3Cpath d='M105 61v20' stroke='%23e9f3fa' stroke-width='.9' opacity='.3'/%3E%3Cpath d='M183 63v17' stroke='%23e9f3fa' stroke-width='.9' opacity='.3'/%3E%3Cpath d='M40 69v11' stroke='%23e9f3fa' stroke-width='.9' opacity='.3'/%3E%3Cpath d='M121 68v12' stroke='%23e9f3fa' stroke-width='.9' opacity='.3'/%3E%3Cpath d='M165 69v20' stroke='%23e9f3fa' stroke-width='.9' opacity='.3'/%3E%3Cpath d='M176 59v17' stroke='%23e9f3fa' stroke-width='.9' opacity='.3'/%3E%3Cpath d='M58 68v15' stroke='%23e9f3fa' stroke-width='.9' opacity='.3'/%3E%3Cpath d='M114 70v24' stroke='%23e9f3fa' stroke-width='.9' opacity='.3'/%3E%3Cpath d='M211 63v18' stroke='%23e9f3fa' stroke-width='.9' opacity='.3'/%3E%3Cpath d='M165 64v15' stroke='%23e9f3fa' stroke-width='.9' opacity='.3'/%3E%3Cpath d='M105 60v16' stroke='%23e9f3fa' stroke-width='.9' opacity='.3'/%3E%3Cpath d='M213 70v20' stroke='%23e9f3fa' stroke-width='.9' opacity='.3'/%3E%3Cpath d='M122 62v11' stroke='%23e9f3fa' stroke-width='.9' opacity='.3'/%3E%3Cpath d='M80 67v24' stroke='%23e9f3fa' stroke-width='.9' opacity='.3'/%3E%3C/g%3E%3Crect x='34' y='57' width='196' height='4' fill='%236d737a'/%3E%3Cpath d='M38 60V51' stroke='%23cfd6dc' stroke-width='1.2'/%3E%3Cpath d='M50 60V51' stroke='%23cfd6dc' stroke-width='1.2'/%3E%3Cpath d='M62 60V51' stroke='%23cfd6dc' stroke-width='1.2'/%3E%3Cpath d='M74 60V51' stroke='%23cfd6dc' stroke-width='1.2'/%3E%3Cpath d='M86 60V51' stroke='%23cfd6dc' stroke-width='1.2'/%3E%3Cpath d='M98 60V51' stroke='%23cfd6dc' stroke-width='1.2'/%3E%3Cpath d='M110 60V51' stroke='%23cfd6dc' stroke-width='1.2'/%3E%3Cpath d='M122 60V51' stroke='%23cfd6dc' stroke-width='1.2'/%3E%3Cpath d='M134 60V51' stroke='%23cfd6dc' stroke-width='1.2'/%3E%3Cpath d='M146 60V51' stroke='%23cfd6dc' stroke-width='1.2'/%3E%3Cpath d='M36 51H146' stroke='%23cfd6dc' stroke-width='1.4'/%3E%3Crect x='88' y='46' width='16' height='14' fill='%23b3472f'/%3E%3Crect x='104' y='46' width='16' height='14' fill='%233f6f8f'/%3E%3Crect x='96' y='33' width='16' height='13' fill='%23d6a33a'/%3E%3Cpath d='M70 58L70 40L96 30M70 40L52 56' fill='none' stroke='%233d444b' stroke-width='2.2'/%3E%3Crect x='56' y='50' width='22' height='8' fill='%2359616a'/%3E%3Crect x='128' y='30' width='14' height='28' fill='%23a52a2a'/%3E%3Crect x='128' y='26' width='14' height='6' fill='%23151515'/%3E%3Crect x='150' y='22' width='68' height='36' fill='url(%23cb)' stroke='%237f8a93' stroke-width='.8'/%3E%3Crect x='146' y='17' width='76' height='6' fill='%237c848c'/%3E%3Crect x='156' y='30' width='10' height='9' fill='%231a3550'/%3E%3Crect x='156' y='30' width='10' height='9' fill='%23ffd36b' opacity='.55'/%3E%3Crect x='170' y='30' width='10' height='9' fill='%231a3550'/%3E%3Crect x='170' y='30' width='10' height='9' fill='%23ffd36b' opacity='.55'/%3E%3Crect x='184' y='30' width='10' height='9' fill='%231a3550'/%3E%3Crect x='184' y='30' width='10' height='9' fill='%23ffd36b' opacity='.55'/%3E%3Crect x='198' y='30' width='10' height='9' fill='%231a3550'/%3E%3Crect x='198' y='30' width='10' height='9' fill='%23ffd36b' opacity='.55'/%3E%3Crect x='168' y='6' width='34' height='12' fill='url(%23cb)' stroke='%237f8a93' stroke-width='.8'/%3E%3Crect x='172' y='9' width='26' height='5' fill='%231a3550'/%3E%3Cpath d='M185 6V0' stroke='%23444' stroke-width='1.6'/%3E%3Ccircle cx='185' cy='1.5' r='2' fill='%23ffe08a'/%3E%3Ccircle cx='146' cy='46' r='5' fill='%23fff' stroke='%23c33' stroke-width='2'/%3E%3Cpath d='M14 56L34 60' stroke='%239aa4ad' stroke-width='1.6'/%3E%3C/svg%3E") 0 0 / 100% 100% no-repeat; transform-origin:45% 72%; animation:boatBob 2.4s ease-in-out infinite; }
+  #boat .art.sink { animation:boatSink 4.4s cubic-bezier(.5, 0, .9, .6) forwards; }
+  @keyframes boatSail { from { transform:translateX(var(--from)); } to { transform:none; } }
+  @keyframes boatBob { 0%, 100% { transform:translateY(0) rotate(-.6deg); } 50% { transform:translateY(2.5%) rotate(.8deg); } }
+  @keyframes boatSink { 0% { transform:translate(0, 0) rotate(0); } 6% { transform:translate(2%, -3%) rotate(2deg); } 100% { transform:translate(-8%, 124%) rotate(-32deg); } }
+  #boat-flash { position:fixed; inset:0; z-index:18; pointer-events:none; background:#fff3d0; opacity:0; animation:boatFlash .45s ease-out forwards; }
+  @keyframes boatFlash { 0% { opacity:.55; } 100% { opacity:0; } }
   :root { color-scheme:dark; }
   #app { position:relative; z-index:2; display:flex; flex-direction:column; align-items:center; gap:14px; max-width:100%; }
   h1 { position:relative; z-index:2; margin:0; font-size:28px; }
@@ -420,7 +429,7 @@ function applyView(v) {
   net.ready = true;
   if (v.n && v.n !== lastN) /^\d$/.test(v.top.v) ? SFX.play() : SFX.special();
   lastN = v.n;
-  if (v.over && !was) { record(v.win === 'c', hands.h.length); confetti(); whaleBreach(); v.win === 'c' ? SFX.win() : SFX.lose(); }
+  if (v.over && !was) { record(v.win === 'c', hands.h.length); confetti(); winFx(v.win === 'c'); v.win === 'c' ? SFX.win() : SFX.lose(); }
   render();
 }
 
@@ -475,7 +484,7 @@ function play(w, i) {
   if (c.c !== 'w') color = c.c;
   if (c.v === 'taki') taki = true;
   if (taki && w === viewer && mode !== '2' && ++game.chain >= 5 && unlock('chain')) toast('🏅 הישג חדש: שרשרת טאקי של 5 קלפים'), save();
-  if (!hands[w].length) { over = true; winnerW = w; if (mode === '1' || mode === '3') record(w === viewer, hands[w === 'h' ? 'c' : 'h'].length); msg = mode !== '1' ? '🎉 ' + PN(w) + ' ניצח!' : w === 'h' ? '🎉 ניצחת!' : '🤖 המחשב ניצח'; confetti(); whaleBreach(); mode === '2' || w === 'h' ? SFX.win() : SFX.lose(); return next(); }
+  if (!hands[w].length) { over = true; winnerW = w; if (mode === '1' || mode === '3') record(w === viewer, hands[w === 'h' ? 'c' : 'h'].length); msg = mode !== '1' ? '🎉 ' + PN(w) + ' ניצח!' : w === 'h' ? '🎉 ניצחת!' : '🤖 המחשב ניצח'; confetti(); winFx(mode === '2' || w === viewer); mode === '2' || w === 'h' ? SFX.win() : SFX.lose(); return next(); }
   if (c.c === 'w') {
     if (w === viewer || mode === '3') { pick = true; msg = mode === '3' ? PN(w) + ' בוחר צבע' : 'בחר צבע'; return next(); }
     return setColor(level === '1' ? 'rygb'[Math.random() * 4 | 0] : mostCommon());
@@ -994,6 +1003,139 @@ function whaleBreach() {
   setTimeout(() => splash(left, left + W, top + Hc, k), 350);
   [1300, 2300, 3300].forEach(t => setTimeout(() => spout(bx, by, k), t));
   setTimeout(() => splash(left + W * .3, left + W, top + Hc, k), 4900);
+}
+
+// Losing on the rainy beach: a boat sails in, a missile streaks across the sky, hits it, and the burning boat sinks.
+function boatSunk() {
+  if (!document.body.getAttribute || document.getElementById('boat')) return;
+  if (window.matchMedia?.('(prefers-reduced-motion: reduce)')?.matches) return;
+  const W = Math.min(innerWidth * .42, 330), Hc = W * 100 / 240, water = innerHeight * .5, x1 = innerWidth * .5, k = W / 240;
+  const box = document.createElement('div');
+  box.id = 'boat'; box.style.cssText = `left:${x1}px;top:${water - Hc}px;width:${W}px;height:${Hc}px;--from:${innerWidth - x1 + 20}px`;
+  box.innerHTML = '<div class="art"></div>';
+  document.body.appendChild(box);
+  const cv = document.createElement('canvas'), g = cv.getContext?.('2d');
+  if (!g) { setTimeout(() => box.remove(), 6000); return; }
+  const dpr = window.devicePixelRatio || 1, VW = innerWidth, VH = innerHeight;
+  cv.width = VW * dpr; cv.height = VH * dpr;
+  cv.style.cssText = 'position:fixed;inset:0;width:100%;height:100%;z-index:17;pointer-events:none';
+  document.body.appendChild(cv);
+  g.scale(dpr, dpr);
+  const hit = { x: x1 + W * .14, y: water - Hc * .45 }, from = { x: -50, y: water - VH * .24 };
+  const T_HIT = 2200, FLIGHT = 850, ps = [];
+  let exploded = false, t0 = performance.now(), last = t0;
+  setTimeout(() => missileSound(), T_HIT - FLIGHT);
+  const puff = (t, x, y, vx, vy, r, a, grow, fade) => ps.push({ t, x, y, vx, vy, r, a, grow, fade });
+  (function frame(now) {
+    const age = now - t0, dt = Math.min(2, (now - last) / 16.7); last = now;
+    g.clearRect(0, 0, VW, VH);
+    if (age > T_HIT - FLIGHT && age < T_HIT) {                                    // the missile, accelerating toward the boat
+      const u = (age - (T_HIT - FLIGHT)) / FLIGHT, e = u * u * .6 + u * .4;
+      const x = from.x + (hit.x - from.x) * e, y = from.y + (hit.y - from.y) * e, ang = Math.atan2(hit.y - from.y, hit.x - from.x);
+      puff('smoke', x - Math.cos(ang) * 22 * k * 2, y - Math.sin(ang) * 22 * k * 2, 0, 0, 5 * k * 2, .6, 1.05, .018);
+      puff('fire', x - Math.cos(ang) * 20 * k * 2, y - Math.sin(ang) * 20 * k * 2, (Math.random() - .5), (Math.random() - .5), 4 * k * 2, .9, .97, .06);
+      g.save(); g.translate(x, y); g.rotate(ang);
+      const L = 46 * k * 1.6, T = 5.5 * k * 1.6;
+      g.fillStyle = '#d7dde2'; g.fillRect(-L / 2, -T / 2, L * .78, T);
+      g.fillStyle = '#c62828'; g.beginPath(); g.moveTo(L * .28, -T / 2); g.lineTo(L / 2, 0); g.lineTo(L * .28, T / 2); g.fill();
+      g.fillStyle = '#8a949c'; g.fillRect(-L / 2, -T * 1.1, L * .16, T * .7); g.fillRect(-L / 2, T * .4, L * .16, T * .7);
+      g.fillStyle = '#ffb347'; g.beginPath(); g.moveTo(-L / 2, -T / 2); g.lineTo(-L / 2 - L * .4 * (.8 + Math.random() * .4), 0); g.lineTo(-L / 2, T / 2); g.fill();
+      g.restore();
+    }
+    if (!exploded && age >= T_HIT) {                                              // impact
+      exploded = true;
+      boomSound();
+      document.body.insertAdjacentHTML('beforeend', '<div id="boat-flash"></div>');
+      setTimeout(() => document.getElementById('boat-flash')?.remove(), 600);
+      box.querySelector('.art').classList.add('sink');
+      ps.push({ t: 'ball', x: hit.x, y: hit.y, r: 6, rmax: 80 * k * 1.6, a: 1 });
+      ps.push({ t: 'ring', x: hit.x, y: water, r: 10, rmax: 190 * k * 1.6, a: .8 });
+      for (let i = 0; i < 70; i++) {
+        const a = Math.random() * 6.283, v = (3 + Math.random() * 9) * k * 1.6;
+        puff('spark', hit.x, hit.y, Math.cos(a) * v, Math.sin(a) * v - 2, 1.2 + Math.random() * 2, 1, 1, .02);
+      }
+      for (let i = 0; i < 12; i++) {                                              // pieces of the boat thrown into the sea
+        const a = -Math.PI * Math.random(), v = (3 + Math.random() * 6) * k * 1.6;
+        ps.push({ t: 'debris', x: hit.x, y: hit.y, vx: Math.cos(a) * v * 1.3, vy: Math.sin(a) * v - 2, w: (6 + Math.random() * 12) * k, h: (2 + Math.random() * 3) * k,
+          rot: Math.random() * 6, vr: (Math.random() - .5) * .3, a: 1, col: ['#5b3a1e', '#7c1d1d', '#d6d6d6', '#2a2a2a'][i % 4] });
+      }
+      for (let i = 0; i < 26; i++) puff('smoke', hit.x + (Math.random() - .5) * 30, hit.y, (Math.random() - .5) * 1.2 - .6, -(1 + Math.random() * 2), 14 * k * 1.6, .55, 1.012, .0035);
+    }
+    if (exploded && age < T_HIT + 3800) {                                         // the deck burns while the boat goes down
+      const sinkU = Math.min(1, (age - T_HIT) / 4400), deckY = hit.y + (water - hit.y) * 0 + sinkU * Hc * 1.1;
+      if (deckY < water + 4) {
+        for (let i = 0; i < 2; i++) puff('fire', hit.x + (Math.random() - .3) * W * .5 + sinkU * -W * .05, deckY + 4, (Math.random() - .5) * .8 - .4, -(1.5 + Math.random() * 2.5), (7 + Math.random() * 8) * k * 1.6, .85, .985, .03);
+        if (Math.random() < .5) puff('smoke', hit.x + (Math.random() - .3) * W * .4, deckY, -.6 + Math.random() * -.8, -(1.2 + Math.random()), 10 * k * 1.6, .5, 1.012, .005);
+      }
+      if (age > T_HIT + 500 && age < T_HIT + 4200 && Math.random() < .5) puff('bubble', hit.x + (Math.random() - .3) * W * .5, water + 6 + Math.random() * 30, 0, -.6, 1.5 + Math.random() * 3, .8, 1, .012);
+    }
+    g.globalCompositeOperation = 'source-over';
+    for (let i = ps.length - 1; i >= 0; i--) {
+      const p = ps[i];
+      if (p.t === 'ball') {
+        p.r += (p.rmax - p.r) * .12 * dt; p.a -= .022 * dt;
+        if (p.a <= 0) { ps.splice(i, 1); continue; }
+        const gr = g.createRadialGradient(p.x, p.y, 0, p.x, p.y, p.r);
+        gr.addColorStop(0, `rgba(255,250,220,${p.a})`); gr.addColorStop(.35, `rgba(255,190,60,${p.a})`); gr.addColorStop(.7, `rgba(220,70,20,${p.a * .8})`); gr.addColorStop(1, 'rgba(120,20,0,0)');
+        g.fillStyle = gr; g.beginPath(); g.arc(p.x, p.y, p.r, 0, 6.283); g.fill();
+      } else if (p.t === 'ring') {
+        p.r += (p.rmax - p.r) * .06 * dt; p.a -= .014 * dt;
+        if (p.a <= 0) { ps.splice(i, 1); continue; }
+        g.strokeStyle = `rgba(255,255,255,${p.a})`; g.lineWidth = 3; g.beginPath(); g.ellipse(p.x, p.y, p.r, p.r * .16, 0, 0, 6.283); g.stroke();
+      } else if (p.t === 'debris') {
+        p.vy += .28 * dt; p.x += p.vx * dt; p.y += p.vy * dt; p.rot += p.vr * dt;
+        if (p.y > water) { p.y = water + Math.sin(now / 300 + p.x) * 2; p.vx *= .96; p.vy = 0; p.vr *= .9; p.a -= .004 * dt; }
+        if (p.a <= 0) { ps.splice(i, 1); continue; }
+        g.save(); g.translate(p.x, p.y); g.rotate(p.rot); g.globalAlpha = Math.max(0, p.a); g.fillStyle = p.col; g.fillRect(-p.w / 2, -p.h / 2, p.w, p.h); g.restore();
+      } else {
+        p.x += (p.vx || 0) * dt; p.y += (p.vy || 0) * dt; p.r *= Math.pow(p.grow, dt); p.a -= p.fade * dt;
+        if (p.t === 'spark') p.vy += .25 * dt;
+        if (p.t === 'bubble' && p.y < water) { ps.splice(i, 1); continue; }
+        if (p.a <= 0) { ps.splice(i, 1); continue; }
+        if (p.t === 'fire') {
+          g.globalCompositeOperation = 'lighter';
+          const gr = g.createRadialGradient(p.x, p.y, 0, p.x, p.y, p.r);
+          gr.addColorStop(0, `rgba(255,230,140,${p.a})`); gr.addColorStop(.5, `rgba(255,120,30,${p.a * .7})`); gr.addColorStop(1, 'rgba(200,40,0,0)');
+          g.fillStyle = gr; g.beginPath(); g.arc(p.x, p.y, p.r, 0, 6.283); g.fill(); g.globalCompositeOperation = 'source-over';
+        } else if (p.t === 'smoke') {
+          const gr = g.createRadialGradient(p.x, p.y, 0, p.x, p.y, p.r);
+          gr.addColorStop(0, `rgba(40,40,44,${p.a})`); gr.addColorStop(1, 'rgba(40,40,44,0)');
+          g.fillStyle = gr; g.beginPath(); g.arc(p.x, p.y, p.r, 0, 6.283); g.fill();
+        } else if (p.t === 'spark') {
+          g.strokeStyle = `rgba(255,${160 + Math.random() * 80 | 0},60,${p.a})`; g.lineWidth = p.r; g.beginPath(); g.moveTo(p.x, p.y); g.lineTo(p.x - p.vx * 1.5, p.y - p.vy * 1.5); g.stroke();
+        } else {
+          g.strokeStyle = `rgba(255,255,255,${p.a})`; g.lineWidth = 1; g.beginPath(); g.arc(p.x, p.y, p.r, 0, 6.283); g.stroke();
+        }
+      }
+    }
+    if (age < 9000 && (age < T_HIT + 4000 || ps.length)) requestAnimationFrame(frame);
+    else { cv.remove(); box.remove(); }
+  })(t0);
+}
+
+function missileSound() {                              // a rising whistle
+  if (muted || !AC) return;
+  const len = Math.floor(AC.sampleRate * .9), buf = AC.createBuffer(1, len, AC.sampleRate), d = buf.getChannelData(0);
+  for (let i = 0; i < len; i++) d[i] = (Math.random() * 2 - 1) * Math.min(1, i / (AC.sampleRate * .1));
+  const src = AC.createBufferSource(), f = AC.createBiquadFilter(), g = AC.createGain();
+  src.buffer = buf; f.type = 'bandpass'; f.Q.value = 3;
+  f.frequency.setValueAtTime(500, AC.currentTime); f.frequency.exponentialRampToValueAtTime(2800, AC.currentTime + .85);
+  g.gain.value = .1; src.connect(f); f.connect(g); g.connect(AC.destination); src.start();
+}
+function boomSound() {                                 // a deep thump with a rumbling tail
+  if (muted || !AC) return;
+  const len = Math.floor(AC.sampleRate * 1.6), buf = AC.createBuffer(1, len, AC.sampleRate), d = buf.getChannelData(0);
+  for (let i = 0; i < len; i++) d[i] = (Math.random() * 2 - 1) * Math.pow(1 - i / len, 2.2);
+  const src = AC.createBufferSource(), f = AC.createBiquadFilter(), g = AC.createGain(), o = AC.createOscillator(), og = AC.createGain();
+  src.buffer = buf; f.type = 'lowpass'; f.frequency.value = 500; g.gain.value = .5;
+  o.frequency.setValueAtTime(90, AC.currentTime); o.frequency.exponentialRampToValueAtTime(30, AC.currentTime + .6);
+  og.gain.setValueAtTime(.45, AC.currentTime); og.gain.exponentialRampToValueAtTime(.001, AC.currentTime + .7);
+  src.connect(f); f.connect(g); g.connect(AC.destination); o.connect(og); og.connect(AC.destination); src.start(); o.start(); o.stop(AC.currentTime + .8);
+}
+
+// Win or loss effects: a whale for a win, and on the rainy beach a sinking boat for a loss.
+function winFx(iWon) {
+  if (!iWon && document.body.getAttribute?.('data-bg') === 'beach') boatSunk(); else whaleBreach();
 }
 
 // On phones held upright, the page is laid out about 12% wider than the screen, so the whole game is seen a bit from afar.
