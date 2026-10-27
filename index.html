@@ -239,6 +239,7 @@ function unlockAudio() {
   b.buffer = AC.createBuffer(1, 1, 22050);
   b.connect(AC.destination);
   b.start(0);
+  syncRain();
 }
 ['touchend', 'pointerup', 'click'].forEach(e => document.addEventListener(e, unlockAudio, { passive: true }));
 
@@ -265,6 +266,7 @@ const SFX = {
 function toggleMute() {
   muted = !muted;
   try { localStorage.setItem('mute', muted ? '1' : '0'); } catch (e) {}
+  syncRain();
   render();
 }
 
@@ -704,6 +706,58 @@ function animateHand(prev) {
   });
 }
 
+// Calming rain for the beach background: soft filtered noise that slowly swells, plus a few gentle drops. Follows the mute button.
+let rain = null;
+function makeRainBuffer() {
+  const len = AC.sampleRate * 5, buf = AC.createBuffer(2, len, AC.sampleRate);
+  for (let c = 0; c < 2; c++) {
+    const d = buf.getChannelData(c);
+    let b0 = 0, b1 = 0, b2 = 0;                       // pink-ish noise sounds softer than plain white noise
+    for (let i = 0; i < len; i++) {
+      const w = Math.random() * 2 - 1;
+      b0 = .99765 * b0 + w * .099046; b1 = .963 * b1 + w * .2965164; b2 = .57 * b2 + w * 1.0526913;
+      d[i] = (b0 + b1 + b2 + w * .1848) * .11;
+    }
+  }
+  return buf;
+}
+function syncRain() {
+  if (!AC) return;
+  const want = !muted && document.body.getAttribute?.('data-bg') === 'beach';
+  if (want && !rain) {
+    const src = AC.createBufferSource(); src.buffer = makeRainBuffer(); src.loop = true;
+    const hiss = AC.createBiquadFilter(); hiss.type = 'bandpass'; hiss.frequency.value = 3200; hiss.Q.value = .5;
+    const body = AC.createBiquadFilter(); body.type = 'lowpass'; body.frequency.value = 800;
+    const gHiss = AC.createGain(), gBody = AC.createGain(), master = AC.createGain();
+    gHiss.gain.value = .5; gBody.gain.value = .45; master.gain.value = 0;
+    src.connect(hiss); hiss.connect(gHiss); gHiss.connect(master);
+    src.connect(body); body.connect(gBody); gBody.connect(master);
+    master.connect(AC.destination);
+    const lfo = AC.createOscillator(), lg = AC.createGain();     // a very slow swell, like gusts of rain
+    lfo.frequency.value = .11; lg.gain.value = .025;
+    lfo.connect(lg); lg.connect(master.gain);
+    src.start(); lfo.start();
+    master.gain.setTargetAtTime(.15, AC.currentTime, 1.5);        // fade in slowly
+    const drops = AC.createBuffer(1, Math.floor(AC.sampleRate * .03), AC.sampleRate);
+    const dd = drops.getChannelData(0);
+    for (let i = 0; i < dd.length; i++) dd[i] = (Math.random() * 2 - 1) * (1 - i / dd.length);
+    const r = rain = { src, lfo, master, timer: 0 };
+    (function drop() {
+      if (rain !== r) return;
+      const o = AC.createBufferSource(), f = AC.createBiquadFilter(), g = AC.createGain();
+      o.buffer = drops; f.type = 'bandpass'; f.frequency.value = 1800 + Math.random() * 3400; f.Q.value = 3;
+      g.gain.value = .05 + Math.random() * .07;
+      o.connect(f); f.connect(g); g.connect(master); o.start();
+      r.timer = setTimeout(drop, 120 + Math.random() * 380);
+    })();
+  } else if (!want && rain) {
+    const r = rain; rain = null; clearTimeout(r.timer);
+    r.master.gain.setTargetAtTime(0, AC.currentTime, .4);
+    setTimeout(() => { try { r.src.stop(); r.lfo.stop(); } catch (e) {} }, 2500);
+  }
+}
+document.addEventListener('visibilitychange', () => { if (AC) document.hidden ? AC.suspend() : AC.resume(); });
+
 // Background switcher. To add a background, append an entry here and style it as body[data-bg="id"].
 const BACKGROUNDS = [
   { id: 'poker', name: 'שולחן פוקר', icon: '♠',
@@ -717,7 +771,7 @@ const BACKGROUNDS = [
 ];
 let bgIdx = 0;
 try { bgIdx = Math.max(0, BACKGROUNDS.findIndex(b => b.id === localStorage.getItem('bg'))); } catch (e) {}
-function applyBg() { document.body.setAttribute?.('data-bg', BACKGROUNDS[bgIdx].id); }
+function applyBg() { document.body.setAttribute?.('data-bg', BACKGROUNDS[bgIdx].id); syncRain(); }
 function openBgPicker() {
   const el = document.getElementById('bgpicker');
   el.hidden = false;
