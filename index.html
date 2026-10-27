@@ -117,6 +117,10 @@
          80% { transform:translateY(0) rotate(.4deg); } 100% { transform:translateY(108%) rotate(3deg); } }
   #whale-foam { position:fixed; z-index:17; height:48px; pointer-events:none; background:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 600 80' preserveAspectRatio='none'%3E%3Cdefs%3E%3Cfilter id='f' x='-5%25' y='-50%25' width='110%25' height='200%25'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='.03 .09' numOctaves='3' seed='3' result='n'/%3E%3CfeDisplacementMap in='SourceGraphic' in2='n' scale='24'/%3E%3CfeGaussianBlur stdDeviation='1.2'/%3E%3C/filter%3E%3Cfilter id='m'%3E%3CfeGaussianBlur stdDeviation='9'/%3E%3C/filter%3E%3C/defs%3E%3Cellipse cx='310' cy='58' rx='260' ry='16' fill='%230a1a26' opacity='.55' filter='url(%23m)'/%3E%3Cg filter='url(%23f)'%3E%3Cellipse cx='300' cy='30' rx='290' ry='14' fill='%23eef7fb' opacity='.94'/%3E%3Cellipse cx='300' cy='37' rx='240' ry='8' fill='%23cfe2ea' opacity='.85'/%3E%3Cellipse cx='120' cy='28' rx='80' ry='9' fill='%23fff' opacity='.7'/%3E%3Cellipse cx='470' cy='30' rx='70' ry='8' fill='%23fff' opacity='.6'/%3E%3C/g%3E%3C/svg%3E") 0 0 / 100% 100% no-repeat; opacity:0; animation:foamIn 6s ease-in-out forwards; }
   @keyframes foamIn { 0%, 6% { opacity:0; } 18%, 82% { opacity:1; } 100% { opacity:0; } }
+  #whale-pool { position:fixed; z-index:15; height:110px; pointer-events:none; border-radius:50%; opacity:0; animation:poolIn 6s ease-in-out forwards;
+         background:radial-gradient(ellipse at 50% 35%, #4b9bcb 0%, #2272a3 50%, #0f4670 80%, #0b3a5c 100%);
+         box-shadow:0 0 30px 12px #0a3b5f88, inset 0 6px 14px #ffffff33; }
+  @keyframes poolIn { 0% { opacity:0; transform:scale(.4, .3); } 12%, 86% { opacity:1; transform:scale(1); } 100% { opacity:0; transform:scale(.6, .4); } }
   #whale-foam i { position:absolute; left:6%; right:6%; top:6px; height:22px; border:2px solid #ffffffaa; border-radius:50%; opacity:0; animation:ring 2.4s ease-out infinite; }
   #whale-foam i:nth-child(2) { animation-delay:.8s; } #whale-foam i:nth-child(3) { animation-delay:1.6s; }
   @keyframes ring { 0% { transform:scale(.7, .5); opacity:.8; } 100% { transform:scale(1.25, 1.1); opacity:0; } }
@@ -881,18 +885,56 @@ function spout(x, y, k) {
   })(t0);
 }
 
+// Splash of droplets thrown up along the body as the whale rises out of the water and as it slips back in.
+function splash(x0, x1, y, k) {
+  const cv = document.createElement('canvas'), g = cv.getContext?.('2d');
+  if (!g) return;
+  const dpr = window.devicePixelRatio || 1, W = innerWidth, H = innerHeight;
+  cv.width = W * dpr; cv.height = H * dpr;
+  cv.style.cssText = 'position:fixed;inset:0;width:100%;height:100%;z-index:17;pointer-events:none';
+  document.body.appendChild(cv);
+  g.scale(dpr, dpr);
+  const ps = [];
+  for (let i = 0; i < 110; i++) {
+    const x = x0 + Math.random() * (x1 - x0), v = k * (3 + Math.random() * 8);
+    ps.push({ x, y: y - Math.random() * 10 * k, vx: (Math.random() - .5) * 2.2 * k, vy: -v, r: (.8 + Math.random() * 2) * k, a: 1 });
+  }
+  let last = performance.now();
+  (function frame(now) {
+    const dt = Math.min(2, (now - last) / 16.7); last = now;
+    g.clearRect(0, 0, W, H);
+    for (let i = ps.length - 1; i >= 0; i--) {
+      const p = ps[i];
+      p.vy += .3 * k * dt; p.x += p.vx * dt; p.y += p.vy * dt; p.a -= .012 * dt;
+      if (p.a <= 0 || p.y > y + 14) { ps.splice(i, 1); continue; }
+      g.strokeStyle = `rgba(255,255,255,${Math.min(1, p.a)})`; g.lineWidth = p.r; g.lineCap = 'round';
+      g.beginPath(); g.moveTo(p.x, p.y); g.lineTo(p.x - p.vx, p.y - p.vy * 1.2); g.stroke();
+    }
+    if (ps.length) requestAnimationFrame(frame); else cv.remove();
+  })(last);
+}
+
 function whaleBreach() {
+  if (!document.body.getAttribute) return;
   if (window.matchMedia?.('(prefers-reduced-motion: reduce)')?.matches) return;
-  const water = { beach: 60, sunset: 76 }[document.body.getAttribute?.('data-bg')];      // where the waterline sits, in vh
-  if (!water || document.getElementById('whale')) return;
+  const bg = document.body.getAttribute('data-bg'), sea = bg === 'beach' || bg === 'sunset';
+  const water = { beach: 60, sunset: 76 }[bg] ?? 74;                    // where the waterline sits, in vh
+  if (document.getElementById('whale')) return;
   const W = Math.min(innerWidth * .88, 560), Hc = W * 250 / 640, left = innerWidth * .04, top = innerHeight * water / 100 - Hc;
-  const box = document.createElement('div'), foam = document.createElement('div');
+  const box = document.createElement('div'), foam = document.createElement('div'), parts = [box, foam];
   box.id = 'whale'; box.style.cssText = `left:${left}px;top:${top}px;width:${W}px;height:${Hc}px`; box.innerHTML = '<div class="art"></div>';
   foam.id = 'whale-foam'; foam.style.cssText = `left:${left - W * .05}px;top:${top + Hc - 20}px;width:${W * 1.1}px`; foam.innerHTML = '<i></i><i></i><i></i>';
-  document.body.append(box, foam);
-  setTimeout(() => { box.remove(); foam.remove(); }, 6400);
-  const bx = left + W * 197 / 640, by = top + Hc * 142 / 250;                          // the blowhole in the artwork
-  [1300, 2300, 3300].forEach(t => setTimeout(() => spout(bx, by, W / 520), t));
+  if (!sea) {                                                             // no sea on this background: the whale brings its own pool
+    const pool = document.createElement('div');
+    pool.id = 'whale-pool'; pool.style.cssText = `left:${left - W * .12}px;top:${top + Hc - 40}px;width:${W * 1.24}px`;
+    parts.unshift(pool);
+  }
+  document.body.append(...parts);
+  setTimeout(() => parts.forEach(e => e.remove()), 6400);
+  const k = W / 520, bx = left + W * 197 / 640, by = top + Hc * 142 / 250;     // bx, by: the blowhole in the artwork
+  setTimeout(() => splash(left, left + W, top + Hc, k), 350);
+  [1300, 2300, 3300].forEach(t => setTimeout(() => spout(bx, by, k), t));
+  setTimeout(() => splash(left + W * .3, left + W, top + Hc, k), 4900);
 }
 
 // On phones held upright, the page is laid out about 12% wider than the screen, so the whole game is seen a bit from afar.
