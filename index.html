@@ -125,13 +125,14 @@
   #whale-foam i { position:absolute; left:6%; right:6%; top:6px; height:22px; border:2px solid #ffffffaa; border-radius:50%; opacity:0; animation:ring 2.4s ease-out infinite; }
   #whale-foam i:nth-child(2) { animation-delay:.8s; } #whale-foam i:nth-child(3) { animation-delay:1.6s; }
   @keyframes ring { 0% { transform:scale(.7, .5); opacity:.8; } 100% { transform:scale(1.25, 1.1); opacity:0; } }
-  /* Beach only: the cards are a little darker (dim, wet light) with a small palm in a corner, and the buttons are duller. */
+  /* Beach only: cards and buttons are a little darker (dim, wet light), and each card has a small palm in its bottom-right corner. */
   .card .palm { display:none; }
-  body[data-bg="beach"] .card .palm { display:block; position:absolute; z-index:1; top:6%; right:9%; width:26%; aspect-ratio:1; background:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Cg stroke='%23fff' stroke-width='1.6' stroke-linejoin='round' stroke-linecap='round' paint-order='stroke'%3E%3Cpath d='M17 30C17 24 16 19 18 13' fill='none' stroke='%23fff' stroke-width='4.6'/%3E%3Cpath d='M17 30C17 24 16 19 18 13' fill='none' stroke='%236b4423' stroke-width='2.4'/%3E%3Cg fill='%2314532d'%3E%3Cpath d='M18 12C14 6 7 6 3 10C8 9 13 10 18 12Z'/%3E%3Cpath d='M18 12C22 6 29 6 30 12C25 9 21 10 18 12Z'/%3E%3Cpath d='M18 12C13 11 9 14 8 19C12 15 15 14 18 12Z'/%3E%3Cpath d='M18 12C23 11 27 14 27 19C23 15 20 14 18 12Z'/%3E%3Cpath d='M18 12C16 7 16 4 18 2C20 5 20 8 18 12Z'/%3E%3C/g%3E%3Ccircle cx='16.4' cy='13.6' r='1.7' fill='%235a3a1d' stroke-width='.8'/%3E%3Ccircle cx='19.6' cy='13.8' r='1.7' fill='%235a3a1d' stroke-width='.8'/%3E%3C/g%3E%3C/svg%3E") center / contain no-repeat;
+  body[data-bg="beach"] .card .palm { display:block; position:absolute; z-index:1; bottom:5%; right:8%; width:26%; aspect-ratio:1; background:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Cg stroke='%23fff' stroke-width='1.6' stroke-linejoin='round' stroke-linecap='round' paint-order='stroke'%3E%3Cpath d='M17 30C17 24 16 19 18 13' fill='none' stroke='%23fff' stroke-width='4.6'/%3E%3Cpath d='M17 30C17 24 16 19 18 13' fill='none' stroke='%236b4423' stroke-width='2.4'/%3E%3Cg fill='%2314532d'%3E%3Cpath d='M18 12C14 6 7 6 3 10C8 9 13 10 18 12Z'/%3E%3Cpath d='M18 12C22 6 29 6 30 12C25 9 21 10 18 12Z'/%3E%3Cpath d='M18 12C13 11 9 14 8 19C12 15 15 14 18 12Z'/%3E%3Cpath d='M18 12C23 11 27 14 27 19C23 15 20 14 18 12Z'/%3E%3Cpath d='M18 12C16 7 16 4 18 2C20 5 20 8 18 12Z'/%3E%3C/g%3E%3Ccircle cx='16.4' cy='13.6' r='1.7' fill='%235a3a1d' stroke-width='.8'/%3E%3Ccircle cx='19.6' cy='13.8' r='1.7' fill='%235a3a1d' stroke-width='.8'/%3E%3C/g%3E%3C/svg%3E") center / contain no-repeat;
          filter:drop-shadow(0 1px 1px #0008); }
-  body[data-bg="beach"] .card:not(.back)::after { background:linear-gradient(115deg, #ffffff55 0%, #ffffff00 42%), linear-gradient(#0b1c2e47, #0b1c2e47); }
-  body[data-bg="beach"] .gb { filter:saturate(.55) brightness(.93); }
-  body[data-bg="beach"] .gb::after { opacity:.35; }
+  body[data-bg="beach"] .card:not(.back)::after { background:linear-gradient(115deg, #ffffff55 0%, #ffffff00 42%), linear-gradient(#0b1c2e6b, #0b1c2e6b); }
+  body[data-bg="beach"] .gb { filter:brightness(.74) saturate(.9); }
+  body[data-bg="beach"] .gb::after { opacity:.6; }
+  body[data-bg="beach"] .card .ix.b { display:none; }          /* the palm takes the bottom-right corner */
   body[data-bg="beach"] .gb { text-shadow:1px 1px 0 #111; }
   :root { color-scheme:dark; }
   #app { position:relative; z-index:2; display:flex; flex-direction:column; align-items:center; gap:14px; max-width:100%; }
