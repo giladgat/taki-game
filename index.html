@@ -709,14 +709,19 @@ function animateHand(prev) {
 // Calming rain for the beach background: soft filtered noise that slowly swells, plus a few gentle drops. Follows the mute button.
 let rain = null;
 function makeRainBuffer() {
-  const len = AC.sampleRate * 5, buf = AC.createBuffer(2, len, AC.sampleRate);
+  const len = AC.sampleRate * 5, fade = Math.floor(AC.sampleRate * .4), buf = AC.createBuffer(2, len, AC.sampleRate);
   for (let c = 0; c < 2; c++) {
-    const d = buf.getChannelData(c);
+    const x = new Float32Array(len + fade);
     let b0 = 0, b1 = 0, b2 = 0;                       // pink-ish noise sounds softer than plain white noise
-    for (let i = 0; i < len; i++) {
+    for (let i = 0; i < x.length; i++) {
       const w = Math.random() * 2 - 1;
       b0 = .99765 * b0 + w * .099046; b1 = .963 * b1 + w * .2965164; b2 = .57 * b2 + w * 1.0526913;
-      d[i] = (b0 + b1 + b2 + w * .1848) * .11;
+      x[i] = (b0 + b1 + b2 + w * .1848) * .11;
+    }
+    const d = buf.getChannelData(c);
+    for (let i = 0; i < len; i++) {
+      if (i < fade) { const t = i / fade; d[i] = x[len + i] * Math.sqrt(1 - t) + x[i] * Math.sqrt(t); }   // loop seam: the tail flows into the head
+      else d[i] = x[i];
     }
   }
   return buf;
@@ -734,10 +739,10 @@ function syncRain() {
     src.connect(body); body.connect(gBody); gBody.connect(master);
     master.connect(AC.destination);
     const lfo = AC.createOscillator(), lg = AC.createGain();     // a very slow swell, like gusts of rain
-    lfo.frequency.value = .11; lg.gain.value = .15;
+    lfo.frequency.value = .11; lg.gain.value = .09;
     lfo.connect(lg); lg.connect(master.gain);
     src.start(); lfo.start();
-    master.gain.setTargetAtTime(.9, AC.currentTime, 1.5);         // fade in slowly to about -23 dBFS: calm, but clearly audible
+    master.gain.setTargetAtTime(.55, AC.currentTime, 1.5);        // fade in slowly to about -27 dBFS: calm and soft
     const drops = AC.createBuffer(1, Math.floor(AC.sampleRate * .03), AC.sampleRate);
     const dd = drops.getChannelData(0);
     for (let i = 0; i < dd.length; i++) dd[i] = (Math.random() * 2 - 1) * (1 - i / dd.length);
@@ -746,7 +751,7 @@ function syncRain() {
       if (rain !== r) return;
       const o = AC.createBufferSource(), f = AC.createBiquadFilter(), g = AC.createGain();
       o.buffer = drops; f.type = 'bandpass'; f.frequency.value = 1800 + Math.random() * 3400; f.Q.value = 3;
-      g.gain.value = .15 + Math.random() * .2;
+      g.gain.value = .1 + Math.random() * .14;
       o.connect(f); f.connect(g); g.connect(master); o.start();
       r.timer = setTimeout(drop, 120 + Math.random() * 380);
     })();
@@ -756,7 +761,14 @@ function syncRain() {
     setTimeout(() => { try { r.src.stop(); r.lfo.stop(); } catch (e) {} }, 2500);
   }
 }
-document.addEventListener('visibilitychange', () => { if (AC) document.hidden ? AC.suspend() : AC.resume(); });
+function wakeRain() {
+  if (!AC || document.hidden) return;
+  if (AC.state !== 'running') AC.resume()?.catch?.(() => {});
+  syncRain();
+}
+document.addEventListener('visibilitychange', () => { if (AC && document.hidden) AC.suspend(); else wakeRain(); });
+window.addEventListener?.('pageshow', wakeRain);
+window.setInterval?.(wakeRain, 2000);       // watchdog: if the audio engine was paused by the phone, restart it
 
 // Background switcher. To add a background, append an entry here and style it as body[data-bg="id"].
 const BACKGROUNDS = [
