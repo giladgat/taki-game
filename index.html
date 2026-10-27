@@ -605,6 +605,18 @@ function animateHand(prev) {
   });
 }
 
+// On phones held upright, the page is laid out about 12% wider than the screen, so the whole game is seen a bit from afar.
+function fitPhone() {
+  const meta = document.querySelector('meta[name=viewport]');
+  if (!meta || typeof matchMedia !== 'function') return;
+  const small = Math.min(screen.width, screen.height);
+  const far = matchMedia('(pointer: coarse)').matches && small < 600 && matchMedia('(orientation: portrait)').matches;
+  meta.content = far ? 'width=' + Math.round(small / .88) + ', initial-scale=.88, viewport-fit=cover' : 'width=device-width, initial-scale=1, viewport-fit=cover';
+}
+fitPhone();
+window.addEventListener?.('orientationchange', fitPhone);
+window.addEventListener?.('resize', fitPhone);
+
 showWins();
 newGame();
 </script>
