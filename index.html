@@ -36,8 +36,25 @@
   .xp span { width:120px; height:8px; border-radius:99px; background:#0007; overflow:hidden; display:inline-block; }
   .xp b { display:block; height:100%; background:linear-gradient(90deg, #fde047, #f59e0b); }
   .result { font-size:15px; font-weight:700; color:#fde047; }
-  button.big { font-size:20px; padding:12px 28px; background:#f59e0b; color:#1b1206; font-weight:800; }
-  button.big:hover { background:#fbbf24; }
+  /* Buttons share the card look: cream edge, glossy coloured panel, graffiti lettering. */
+  .gb { position:relative; isolation:isolate; overflow:hidden; display:inline-flex; align-items:center; justify-content:center;
+        border:0; border-radius:9px; padding:9px 16px; background:#fbf8ef; color:#fff; cursor:pointer;
+        font-family:"Permanent Marker", Impact, "Marker Felt", cursive; font-size:19px; line-height:1.2; letter-spacing:.5px;
+        -webkit-text-stroke:1.5px #111; paint-order:stroke fill; text-shadow:2px 2px 0 #111;
+        box-shadow:0 1px 1px #0006, 0 4px 8px #0007, inset 0 0 0 1px #0002;
+        transform:rotate(-2deg); transition:transform .15s ease, box-shadow .15s ease; }
+  .gb::before { content:""; position:absolute; z-index:-1; inset:3px; border-radius:6px; background:var(--c); }
+  .gb::after { content:""; position:absolute; inset:0; border-radius:inherit; pointer-events:none;
+        background:linear-gradient(115deg, #ffffff88 0%, #ffffff22 45%, #ffffff00 100%); }
+  .gb:hover { background:#fbf8ef; transform:rotate(-2deg) translateY(-2px); }
+  .gb:active { transform:rotate(-2deg) translateY(1px); box-shadow:0 1px 2px #000a; }
+  .gb.red { --c:#ff5c5c; } .gb.blue { --c:#52a2ff; } .gb.green { --c:#40e070; } .gb.yellow { --c:#ffd926; }
+  .gb.big { font-size:22px; padding:12px 26px; }
+  .gb select { appearance:none; -webkit-appearance:none; position:relative; z-index:1; border:0; background:transparent; color:inherit;
+        font:inherit; letter-spacing:inherit; -webkit-text-stroke:inherit; text-shadow:inherit; text-align:center; text-align-last:center;
+        padding:0 14px; cursor:pointer; outline:none; }
+  .gb select option { color:#111; -webkit-text-stroke:0; text-shadow:none; font-family:system-ui, sans-serif; }
+  .gb .arr { position:absolute; left:8px; top:50%; translate:0 -50%; z-index:1; font-style:normal; font-size:12px; pointer-events:none; }
   #wins, #streak { position:absolute; z-index:5; top:calc(env(safe-area-inset-top, 0px) + 46px); right:calc(env(safe-area-inset-right, 0px) + 50px);
           padding:4px 12px; border:2px solid #fde047; border-radius:999px; background:#0009; font-size:16px; font-weight:700; direction:ltr; }
   #streak { right:auto; left:calc(env(safe-area-inset-left, 0px) + 50px); border-color:#fb923c; }
@@ -286,18 +303,18 @@ function lobby() {
   if (net.role === 'host') return `<div id="msg">הקוד שלך: <span style="font-size:44px;letter-spacing:6px">${net.code}</span></div>${st}<small>הקלד את הקוד בטלפון השני</small>`;
   if (net.role === 'guest') return `<div id="msg">${net.status}</div>`;
   return `<div id="msg">משחק בין שני טלפונים</div>${st}
-    <button onclick="hostGame()">פתח משחק חדש</button>
-    <div class="row"><input id="code" inputmode="numeric" maxlength="4" placeholder="קוד"><button onclick="joinGame()">הצטרף</button></div>`;
+    <button class="gb blue" onclick="hostGame()">פתח משחק חדש</button>
+    <div class="row"><input id="code" inputmode="numeric" maxlength="4" placeholder="קוד"><button class="gb green" onclick="joinGame()">הצטרף</button></div>`;
 }
 
-const controls = () => `<div class="row"><button onclick="newGame()">משחק חדש</button>
-      <select onchange="setMode(this.value)" aria-label="מצב משחק">
+const controls = () => `<div class="row"><button class="gb red" onclick="newGame()">משחק חדש</button>
+      <span class="gb blue"><select onchange="setMode(this.value)" aria-label="מצב משחק">
         <option value="1" ${mode === '1' ? 'selected' : ''}>נגד המחשב</option>
         <option value="2" ${mode === '2' ? 'selected' : ''}>שני שחקנים, טלפון אחד</option>
-        <option value="3" ${mode === '3' ? 'selected' : ''}>שני טלפונים</option></select>
-      ${mode === '1' ? `<select onchange="setLevel(this.value)" aria-label="רמת קושי">${[['1', 'קל'], ['2', 'בינוני'], ['3', 'קשה']].map(([v, t]) =>
-        `<option value="${v}" ${v === level ? 'selected' : ''}>${t}</option>`).join('')}</select>` : ''}
-      <button onclick="toggleMute()" aria-label="צלילים">${muted ? '🔇' : '🔊'}</button></div>`;
+        <option value="3" ${mode === '3' ? 'selected' : ''}>שני טלפונים</option></select><i class="arr">▾</i></span>
+      ${mode === '1' ? `<span class="gb green"><select onchange="setLevel(this.value)" aria-label="רמת קושי">${[['1', 'קל'], ['2', 'בינוני'], ['3', 'קשה']].map(([v, t]) =>
+        `<option value="${v}" ${v === level ? 'selected' : ''}>${t}</option>`).join('')}</select><i class="arr">▾</i></span>` : ''}
+      <button class="gb yellow" onclick="toggleMute()" aria-label="צלילים">${muted ? '🔇' : '🔊'}</button></div>`;
 function reveal() { viewer = turn; cover = false; render(); }
 
 function newGame() {
@@ -442,7 +459,7 @@ function render() {
       <div class="xp">רמה ${lvlOf(st.xp)}<span><b style="width:${Math.round(100 * (st.xp - 100 * (lvlOf(st.xp) - 1) ** 2) / (100 * (2 * lvlOf(st.xp) - 1)))}%"></b></span></div>
       <div id="msg">${msg}</div>
       ${over && result && mode !== '2' ? `<div class="result">${result.win ? '🎉' : '💪'} +${result.gain} XP${st.streak > 1 ? ' · 🔥 ' + st.streak + ' ברצף' : ''}${result.up ? ' · ⬆️ רמה ' + result.lv : ''}</div>` : ''}
-      ${over ? '<button class="big" onclick="newGame()">עוד משחק! ▶</button>' : ''}
+      ${over ? '<button class="gb yellow big" onclick="newGame()">עוד משחק! ▶</button>' : ''}
       <small>${mode !== '1' ? 'קלפים ל' + PN(other) : 'קלפים למחשב'}: ${hands[other].length}</small>${mode === '3' ? `<br><small>אתה ${PN(viewer)}</small>` : ''}
     </div>
     <div class="row">${hands[other].map(() => '<div class="card back cpu"></div>').join('')}</div>
@@ -454,7 +471,7 @@ function render() {
     </div>
     ${pick && turn === viewer ? `<div class="row pick">${Object.keys(COL).map(c =>
         `<button style="background:${COL[c]}" onclick="setColor('${c}')" title="${NAMES[c]}"></button>`).join('')}</div>` : ''}
-    ${taki && mine ? '<button onclick="closeTaki()">סגור טאקי</button>' : ''}
+    ${taki && mine ? '<button class="gb red" onclick="closeTaki()">סגור טאקי</button>' : ''}
     <div class="row">${hands[viewer].map((c, i) => {
         const k = c.c + c.v, n = seen[k] = (seen[k] || 0) + 1;
         return face(c, mine && canPlay(c) ? 'ok' : '', `data-h="${i}" data-k="${k}#${n}" onclick="humanClick(${i})"`);
