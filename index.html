@@ -1,6 +1,7 @@
 <!doctype html>
 <html lang="he" dir="rtl">
 <head>
+<meta name="build" content="20261030074221">
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <meta name="apple-mobile-web-app-capable" content="yes">
@@ -1316,6 +1317,20 @@ function dealAnim() {
 }
 function startDeal() { document.getElementById('start').hidden = true; dealAnim(); }
 function newDealt() { closeBgPicker(); newGame(); document.body.classList.add('predeal'); setTimeout(dealAnim, 60); }
+
+// On launch, look for a newer version of the page; if there is one, clear the caches and reload it (a home-screen app otherwise keeps the old copy).
+(async function checkUpdate() {
+  try {
+    const mine = document.querySelector('meta[name="build"]')?.content;
+    const t = await (await fetch(location.pathname + '?chk=' + Date.now(), { cache: 'no-store' })).text();
+    const latest = (t.match(/<meta name="build" content="([^"]+)"/) || [])[1];
+    if (!latest || latest === mine || sessionStorage.getItem('upd') === latest) return;
+    sessionStorage.setItem('upd', latest);
+    if (window.caches) for (const k of await caches.keys()) await caches.delete(k);
+    for (const r of (await navigator.serviceWorker?.getRegistrations?.()) || []) await r.unregister();
+    location.replace(location.pathname + '?v=' + latest);
+  } catch (e) {}
+})();
 
 showWins();
 newGame();
