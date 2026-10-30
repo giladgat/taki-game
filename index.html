@@ -1,7 +1,7 @@
 <!doctype html>
 <html lang="he" dir="rtl">
 <head>
-<meta name="build" content="20261030074739">
+<meta name="build" content="20261030074953">
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <meta name="apple-mobile-web-app-capable" content="yes">
@@ -172,6 +172,8 @@
   #bgbtn { position:absolute; z-index:5; left:calc(env(safe-area-inset-left, 0px) + 50px); top:calc(env(safe-area-inset-top, 0px) + 40px);
            font-size:18px; padding:6px 16px; }
   #bgpicker { position:fixed; inset:0; z-index:40; display:flex; align-items:center; justify-content:center; background:#000b; padding:16px; }
+  /* Phones: the page never scrolls; if many cards pile up, the table is shrunk to fit instead. */
+  @media (pointer:coarse) { html, body { height:100%; overflow:hidden; overscroll-behavior:none; } body { padding-bottom:56px; } }
   #start { position:fixed; inset:0; z-index:39; display:flex; align-items:center; justify-content:center; background:#0008; }
   #start[hidden] { display:none; }
   #start button { font-size:30px; padding:16px 40px; }
@@ -652,6 +654,7 @@ function render() {
     ${controls()}`;
   if (mode === '3' && net.role === 'host' && net.ready && net.conn.open) net.conn.send(view());
   animateHand(prev);
+  fitApp();
   if (flyFrom) flyCard(flyFrom);
   flyFrom = null;
 }
@@ -1293,6 +1296,16 @@ function fitPhone() {
 fitPhone();
 window.addEventListener?.('orientationchange', fitPhone);
 window.addEventListener?.('resize', fitPhone);
+
+function fitApp() {
+  const app = document.getElementById('app');
+  if (!app || !matchMedia?.('(pointer: coarse)').matches) return;
+  app.style.zoom = '';
+  const room = innerHeight - 46 - 56 - 8, h = app.offsetHeight;
+  if (h > room && room > 100) app.style.zoom = (room / h).toFixed(3);
+}
+addEventListener('resize', fitApp);
+document.addEventListener('touchmove', e => { if (matchMedia('(pointer: coarse)').matches && !e.target.closest?.('.bgp-panel')) e.preventDefault(); }, { passive: false });
 
 // Dealing: the cards slide one by one from the draw pile to both hands.
 function dealAnim() {
