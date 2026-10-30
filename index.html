@@ -171,6 +171,11 @@
   #bgbtn { position:absolute; z-index:5; left:calc(env(safe-area-inset-left, 0px) + 46px); bottom:calc(env(safe-area-inset-bottom, 0px) + 46px);
            font-size:24px; padding:10px 34px; min-width:150px; }
   #bgpicker { position:fixed; inset:0; z-index:40; display:flex; align-items:center; justify-content:center; background:#000b; padding:16px; }
+  .mn-row { display:flex; flex-wrap:wrap; justify-content:center; gap:8px; }
+  .mn-opt { font-size:16px; padding:8px 14px; }
+  .mn-opt.on { outline:3px solid #1b1b1b; outline-offset:2px; }
+  .mn-big { font-size:22px; padding:12px 30px; }
+  .bgp-panel h3 { margin:4px 0 0; font-size:16px; }
   #bgpicker[hidden] { display:none; }
   .bgp-panel { width:min(92vw, 440px); max-height:92vh; overflow:auto; display:flex; flex-direction:column; align-items:center; gap:14px; padding:18px;
         border-radius:14px; background:#fbf8ef; color:#1b1b1b; box-shadow:0 10px 40px #000c, inset 0 0 0 1px #0002; }
@@ -251,7 +256,7 @@
   <div id="sea"><i></i><i></i><div class="z z1"><i></i></div><div class="z z2"><i></i></div><div class="z z3"><i></i></div><i></i></div>
   <div id="rain"><i></i><i></i><i></i><i></i><u></u></div>
   <div id="bgpicker" hidden></div>
-  <button id="bgbtn" class="gb red" onclick="openBgPicker()" aria-label="החלף רקע">🎨 רקע</button>
+  <button id="bgbtn" class="gb red" onclick="openMenu()" aria-label="תפריט">☰ תפריט</button>
   <div id="app"></div>
 
 <script src="https://unpkg.com/peerjs@1.5.4/dist/peerjs.min.js"></script>
@@ -466,15 +471,7 @@ function lobby() {
     <div class="row"><input id="code" inputmode="numeric" maxlength="4" placeholder="קוד"><button class="gb green" onclick="joinGame()">הצטרף</button></div>`;
 }
 
-const controls = () => `<div class="row"><button class="gb red" onclick="newGame()">משחק חדש</button>
-      <span class="gb blue"><select onchange="setMode(this.value)" aria-label="מצב משחק">
-        <option value="1" ${mode === '1' ? 'selected' : ''}>נגד המחשב</option>
-        <option value="2" ${mode === '2' ? 'selected' : ''}>שני שחקנים, טלפון אחד</option>
-        <option value="3" ${mode === '3' ? 'selected' : ''}>שני טלפונים</option></select><i class="arr">▾</i></span>
-      ${mode === '1' ? `<span class="gb green"><select onchange="setLevel(this.value)" aria-label="רמת קושי">${[['1', 'קל'], ['2', 'בינוני'], ['3', 'קשה']].map(([v, t]) =>
-        `<option value="${v}" ${v === level ? 'selected' : ''}>${t}</option>`).join('')}</select><i class="arr">▾</i></span>` : ''}
-      ${guest() ? '' : `<button class="gb ${pyr ? 'green' : 'blue'}" onclick="setPyr()" aria-label="החלף בין טאקי רגיל לטאקי פירמידה">${pyr ? '🔺 טאקי פירמידה' : '🎴 טאקי רגיל'}</button>`}
-      <button class="gb yellow" onclick="toggleMute()" aria-label="צלילים">${muted ? '🔇' : '🔊'}</button></div>`;
+const controls = () => '';   // all the buttons live in the menu (openMenu)
 function reveal() { viewer = turn; cover = false; render(); }
 
 function newGame() {
@@ -909,6 +906,20 @@ function openBgPicker() {
   el.onclick = e => { if (e.target === el) closeBgPicker(); };
   el.innerHTML = `<div class="bgp-panel"><h3>בחר רקע</h3><div class="bgp-grid">${BACKGROUNDS.map((b, i) =>
     `<button class="bgp-opt${i === bgIdx ? ' on' : ''}" onclick="pickBg(${i})"><span class="bgp-thumb" style="background:${b.thumb}">${b.icon}</span><span>${b.name}</span></button>`).join('')}</div>
+    <button class="gb red" onclick="closeBgPicker()">סגור</button></div>`;
+}
+// One menu button holds everything: new game, game mode, difficulty, regular / pyramid Taki, sound and background.
+function openMenu() {
+  const el = document.getElementById('bgpicker');
+  el.hidden = false;
+  el.onclick = e => { if (e.target === el) closeBgPicker(); };
+  const opt = (on, label, fn, cls = 'blue') => `<button class="gb ${cls} mn-opt${on ? ' on' : ''}" onclick="${fn}">${label}</button>`;
+  el.innerHTML = `<div class="bgp-panel">
+    <button class="gb red mn-big" onclick="closeBgPicker();newGame()">▶ משחק חדש</button>
+    <h3>מצב משחק</h3><div class="mn-row">${[['1', 'נגד המחשב'], ['2', 'שני שחקנים, טלפון אחד'], ['3', 'שני טלפונים']].map(([v, t]) => opt(mode === v, t, `closeBgPicker();setMode('${v}')`)).join('')}</div>
+    ${mode === '1' ? `<h3>רמת קושי</h3><div class="mn-row">${[['1', 'קל'], ['2', 'בינוני'], ['3', 'קשה']].map(([v, t]) => opt(level === v, t, `setLevel('${v}');openMenu()`, 'green')).join('')}</div>` : ''}
+    ${guest() ? '' : `<h3>סוג טאקי</h3><div class="mn-row">${opt(!pyr, '🎴 טאקי רגיל', `closeBgPicker();${pyr ? 'setPyr()' : ''}`, 'yellow')}${opt(pyr, '🔺 טאקי פירמידה', `closeBgPicker();${pyr ? '' : 'setPyr()'}`, 'yellow')}</div>`}
+    <div class="mn-row">${opt(false, muted ? '🔇 צלילים כבויים' : '🔊 צלילים פועלים', 'toggleMute();openMenu()', 'yellow')}${opt(false, '🎨 רקע', 'openBgPicker()', 'red')}</div>
     <button class="gb red" onclick="closeBgPicker()">סגור</button></div>`;
 }
 function closeBgPicker() { document.getElementById('bgpicker').hidden = true; }
