@@ -1,7 +1,7 @@
 <!doctype html>
 <html lang="he" dir="rtl">
 <head>
-<meta name="build" content="20261030074221">
+<meta name="build" content="20261030074517">
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <meta name="apple-mobile-web-app-capable" content="yes">
@@ -166,7 +166,7 @@
   @keyframes whoGlow { from { text-shadow:0 0 5px #ffd500, 0 0 12px #ffc400; } to { text-shadow:0 0 9px #ffe14a, 0 0 22px #ffc400, 0 0 36px #ffb000; } }
   @media (prefers-reduced-motion: reduce) { .who.on { animation:none; } }
   :root { color-scheme:dark; }
-  #app { position:relative; z-index:2; display:flex; flex-direction:column; align-items:center; gap:14px; max-width:100%; }
+  #app { margin-top:48px; position:relative; z-index:2; display:flex; flex-direction:column; align-items:center; gap:14px; max-width:100%; }
   h1 { position:relative; z-index:2; margin:0; font-size:28px; }
   @media (max-width:520px) { h1 { margin-top:34px; } }  /* leave room for the win counter in the corner */
   #bgbtn { position:absolute; z-index:5; left:calc(env(safe-area-inset-left, 0px) + 50px); top:calc(env(safe-area-inset-top, 0px) + 40px);
@@ -254,7 +254,6 @@
 </head>
 <body>
 
-  <h1>טאקי שאיתי יצר</h1>
   <div id="badges"><div id="streak" title="רצף ניצחונות"></div><div id="wins" title="ניצחונות"></div></div>
   <div id="chest"><i class="inner"></i><i class="gold"></i><i class="base"></i><i class="lid"></i><i class="rays"></i><i class="glow"></i></div>
   <div id="sea"><i></i><i></i><div class="z z1"><i></i></div><div class="z z2"><i></i></div><div class="z z3"><i></i></div><i></i></div>
@@ -625,13 +624,14 @@ function render() {
   if (mode === '3' && !net.ready) { app.innerHTML = lobby() + controls(); return; }
   const prev = captureHand(), seen = {};
   const mine = canAct(), other = viewer === 'h' ? 'c' : 'h';
+  const shown = msg.replace(/(התור שלך|התור של המחשב|תור שחקן [12])/g, '').replace(/^[ ·]+|[ ·]+$/g, '');   // whose turn it is shows as the glowing name
   app.innerHTML = `
     <div style="text-align:center">
       <div class="xp">רמה ${lvlOf(st.xp)}<span><b style="width:${Math.round(100 * (st.xp - 100 * (lvlOf(st.xp) - 1) ** 2) / (100 * (2 * lvlOf(st.xp) - 1)))}%"></b></span></div>
-      <div id="msg">${msg}</div>
+      <div id="msg"${shown ? '' : ' style="min-height:0"'}>${shown}</div>
       ${over && result && mode !== '2' ? `<div class="result">${result.win ? '🎉' : '💪'} +${result.gain} XP${st.streak > 1 ? ' · 🔥 ' + st.streak + ' ברצף' : ''}${result.up ? ' · ⬆️ רמה ' + result.lv : ''}</div>` : ''}
       ${over ? '<button class="gb yellow big" onclick="newGame()">עוד משחק! ▶</button>' : ''}
-      <small>${mode !== '1' ? 'קלפים ל' + PN(other) : 'קלפים למחשב'}: ${hands[other].length}</small>${mode === '3' ? `<br><small>אתה ${PN(viewer)}</small>` : ''}
+      ${mode === '3' ? `<small>אתה ${PN(viewer)}</small>` : ''}
     </div>
     ${who(other, mode === '1' ? 'המחשב' : PN(other))}
     <div class="row">${hands[other].map(() => '<div class="card back cpu"></div>').join('')}</div>
